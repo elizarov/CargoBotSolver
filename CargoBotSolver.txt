@@ -322,8 +322,16 @@ ABC 0 0 0
 0 ABABB 0
 0 AABBB 0
 
-# ???
+# Solution of size 10 = [8, 2]
+# P1 [ v  >  2 N1  2  v  > *1] P2 [ v  <]
 -Impossible Vertical Sort Simplified 2
 1
 B ABABB B
 B AABBB B
+
+# Solution of size 10 = [5, 5]
+# P1 [ 2  < N1  < B2] P2 [ v A1 A1  >  v]
+-Impossible Vertical Sort Simplified 3
+1
+AB ABABB ABAB
+AB AABBB ABAB
