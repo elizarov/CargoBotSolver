@@ -2,216 +2,62 @@ package solver;
 
 import java.io.*;
 import java.text.SimpleDateFormat;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.Locale;
+import java.util.*;
 import java.util.concurrent.Phaser;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
+
+import static solver.Constants.*;
+import static solver.Util.*;
 
 /**
  * @author Roman Elizarov.
  */
-public class CargoBotSolver {
+public class CargoBotSolver extends Solution {
+    public static final String DEFAULT_FILE_NAME = "CargoBotSolver.txt";
 
     // ======================================= main =======================================
 
+    enum Action { SOLVE, VERIFY }
+
+    static volatile CargoBotSolver SOLVER; // currently operating one
+
     public static void main(String[] args) throws IOException {
-        File f = new File(args.length == 0 ? "CargoBotSolver.txt" : args[0]);
+        if (args.length == 0 || args.length > 3) {
+            help();
+            return;
+        }
+        Action action = Action.valueOf(args[0].toUpperCase(Locale.US));
+        boolean all = args.length > 1 && args[1].toUpperCase(Locale.US).equals("ALL");
+        int fi = all ? 2 : 1;
+        File f = new File(fi < args.length ? args[fi] : DEFAULT_FILE_NAME);
+        if (action == Action.SOLVE)
+            new Console().start();
         try (FileInputStream in = new FileInputStream(f)) {
-            solveFile(in);
+            new Parser(action, all).processFile(in);
         }
     }
 
-    // ======================================= file parser =======================================
-
-    private static void solveFile(InputStream in) throws IOException {
-        solveFile(new BufferedReader(new InputStreamReader(in)));
+    private static void help() {
+        System.out.println("Usage: java " + CargoBotSolver.class.getName() + " (solve|verify) [all] [<file>]");
     }
-
-    private static void solveFile(BufferedReader in) throws IOException {
-        while (true) {
-            String name = nextLine(in);
-            if (name == null)
-                break;
-            boolean on = false;
-            switch (name.charAt(0)) {
-                case '+':
-                    on = true;
-                    // falls through
-                case '-':
-                    break;
-                default:
-                    throw new IllegalArgumentException("Unexpected line: " + name);
-            }
-            name = name.substring(1);
-            String line = nextLine(in);
-            int restrict = 0;
-            if (line.startsWith(":")) {
-                restrict = parseRestrict(line.substring(1));
-                line = nextLine(in);
-            }
-            int hp = Integer.parseInt(line);
-            int[] init = parseBoard(nextLine(in));
-            int[] goal = parseBoard(nextLine(in));
-            if (!on)
-                continue; // turned off
-            new CargoBotSolver(name, restrict, hp, init, goal).go();
-        }
-    }
-
-    private static int parseRestrict(String line) {
-        int restrict = 0;
-        for (int i = 0; i < MOD_STRS.length; i++) {
-            int mod = MODS[i];
-            if (mod != ALWAYS)
-                restrict |= mod;
-        }
-        loop:
-        for (int i = 0; i < line.length(); i++) {
-            String c = "" + line.charAt(i);
-            for (int j = 0; j < MOD_STRS.length; j++) {
-                if (c.equals(MOD_STRS[j])) {
-                    restrict &= ~MODS[j];
-                    continue loop;
-                }
-            }
-            throw new IllegalArgumentException("Invalid restrictions: " + line);
-        }
-        return restrict;
-    }
-
-    private static int[] parseBoard(String line) {
-        String[] s = line.split("[ ]+");
-        int[] b = new int[s.length];
-        for (int i = 0; i < s.length; i++) {
-            try {
-                b[i] = Integer.parseInt(s[i]);
-            } catch (NumberFormatException e) {
-                b[i] = parseStack(s[i]);
-            }
-        }
-        return b;
-    }
-
-    private static int parseStack(String ss) {
-        int s = 0;
-        for (int i = 0; i < ss.length(); i++) {
-            int b = ss.charAt(i) - 'A' + A;
-            if (b < A || b > MAX_COLORS)
-                throw new IllegalArgumentException("Malformed stack: " + ss);
-            s = stackPush(s, b);
-        }
-        return s;
-    }
-
-    private static String nextLine(BufferedReader in) throws IOException {
-        while (true) {
-            String line = in.readLine();
-            if (line == null)
-                return null;
-            int j = line.indexOf('#');
-            if (j >= 0)
-                line = line.substring(0, j);
-            line = line.trim();
-            if (!line.isEmpty())
-                return line;
-        }
-    }
-
-    // ======================================= constants =======================================
-
-    // General limits
-    static final int MAX_HEIGHT = 7;
-    static final int MAX_COLORS = 4;
-    static final int MAX_PROCS = 4;
-    static final int MAX_PROC_LEN = 8;
-
-    // Bit sizes
-    static final int BITS_PER_HEIGHT = 3;
-    static final int STACK_HEIGHT_MASK = (1 << BITS_PER_HEIGHT) - 1;
-    static final int BITS_PER_COLOR = 3;
-    static final int STACK_COLOR_MASK = (1 << BITS_PER_COLOR) - 1;
-
-    static final int BITS_PER_SLOT = 3;
-    static final int FRAME_SLOT_MASK = (1 << BITS_PER_SLOT) - 1;
-    static final int BITS_PER_PROC = 2;
-    static final int FRAME_PROC_MASK = (1 << BITS_PER_PROC) - 1;
-    static final int BITS_PER_FRAME = BITS_PER_SLOT + BITS_PER_PROC;
-    static final long FRAME_FULL_MASK = (1L << BITS_PER_FRAME) - 1;
-
-    static final int MAX_SP = (64 / BITS_PER_FRAME - 1) * BITS_PER_FRAME; // must fit into "long"
-
-    // Colors
-    static final int NONE = 0;
-    static final int A = 1;
-    static final int B = 2;
-    static final int C = 3;
-    static final int D = 4;
-
-    // Ops
-    static final int UNKNOWN = 0;
-    static final int DOWN = 1;
-    static final int RIGHT = 2;
-    static final int LEFT = 3;
-    static final int CALL_1 = 4;
-    static final int CALL_2 = 5;
-    static final int CALL_3 = 6;
-    static final int CALL_4 = 7;
-
-    static final int MAX_OP = 8;
-
-    static final int BITS_PER_OP = 3;
-    static final int OP_MASK = (1 << BITS_PER_OP) - 1;
-
-    // Mods
-    static final int ALWAYS = 0x008;
-    static final int WHEN_NONE = 0x010;
-    static final int WHEN_ANY = 0x020;
-    static final int WHEN_A = 0x040;
-    static final int WHEN_B = 0x080;
-    static final int WHEN_C = 0x100;
-    static final int WHEN_D = 0x200;
-
-    static final int MIN_MOD = ALWAYS;
-    static final int MAX_MOD = 0x400;
-
-    static final int BITS_PER_CODE = 10;
-
-    // execute conditions
-    static final int EXECUTE_OK = 1;
-    static final int EXECUTE_FAIL = 2;
-    static final int EXECUTE_UNKNOWN_MOD = 3;
-    static final int EXECUTE_UNKNOWN_CODE = 4;
-
-    // ops list / strings
-    private static final int[] OPS = { DOWN, RIGHT, LEFT, CALL_1, CALL_2, CALL_3, CALL_4 };
-    private static final String[] OP_STRS = { "v", ">", "<", "1", "2", "3", "4" };
-
-    // mods list / strings, (note: MODS has a sentinel value at the end)
-    private static final int[] MODS = { ALWAYS, WHEN_NONE, WHEN_ANY, WHEN_A, WHEN_B, WHEN_C, WHEN_D, MAX_MOD };
-    private static final String[] MOD_STRS = { " ", "N", "*", "A", "B", "C", "D" };
 
     // ======================================= instance fields =======================================
 
     // max colors & mods combos
-    private int maxColor = A;
-    private int nMods;
+    private final int maxColor;
+    private final int nMods;
 
     private final int[] execMods;
     private final int[] skipMods;
     private final int[] executeModMatrix = new int[MAX_MOD];
 
     private final String name;
-    private final Pos initPos;
-    private final int[] goal;
-
-    final int[] procLen = new int[MAX_PROCS + 1];
-    final int[] code = new int[MAX_PROCS * MAX_PROC_LEN];
-    
-    private final Hash visited = new Hash();
+    private final Constraints constraints;
+    private final World[] worlds; // many worlds in simulation
 
     // stats
     private long[] cntTotal = new long[MAX_PROC_LEN * MAX_PROCS * 4];
@@ -219,12 +65,16 @@ public class CargoBotSolver {
     private long[] cntBumpRight = new long[MAX_PROC_LEN * MAX_PROCS * 4];
     private long[] cntTooHigh = new long[MAX_PROC_LEN * MAX_PROCS * 4];
     private long[] cntInfLoop = new long[MAX_PROC_LEN * MAX_PROCS * 4];
-    private long[] cntFinished = new long[MAX_PROC_LEN * MAX_PROCS * 4];
+    private long[] cntReturns = new long[MAX_PROC_LEN * MAX_PROCS * 4];
     private long[] cntUnreachable = new long[MAX_PROC_LEN * MAX_PROCS * 4];
     private long[] cntRedundant = new long[MAX_PROC_LEN * MAX_PROCS * 4];
     private long[] cntFutile = new long[MAX_PROC_LEN * MAX_PROCS * 4];
-    private int maxMovesMade;
+    private long[] cntPoison = new long[MAX_PROC_LEN * MAX_PROCS * 4];
+    private long[] cntStackOver = new long[MAX_PROC_LEN * MAX_PROCS * 4];
+    private long[] cntTooManyMoves = new long[MAX_PROC_LEN * MAX_PROCS * 4];
     private long totalMovesMade;
+    private int maxMovesMade;
+    private final Solution maxMovesSolution = new Solution();
 
     // pruning for unused operations
     private final int[] usedOps = new int[MAX_OP];
@@ -232,7 +82,7 @@ public class CargoBotSolver {
     private int shallUseOpSlots;
     private int freeOpSlots;
 
-    // prunning for redundant pairs
+    // pruning for redundant pairs
     private final boolean redundant[] = new boolean[1 << (2 * BITS_PER_CODE)];
 
     // progress
@@ -241,16 +91,12 @@ public class CargoBotSolver {
 
     // ======================================= constructor =======================================
 
-    CargoBotSolver(String name, int restrict, int hp, int[] init, int[] goal) {
+    CargoBotSolver(String name, Constraints constraints, List<World> worlds) {
         this.name = name;
-        log("Solving: %s%n", name);
-        if (init.length != goal.length)
-            throw new IllegalArgumentException("Inconsistent lengths");
-        // init colors
-        int[] initCC = convertAndCountColors(init);
-        int[] goalCC = convertAndCountColors(goal);
-        if (!Arrays.equals(initCC, goalCC))
-            throw new IllegalArgumentException("Inconsistent number of colors");
+        this.constraints = constraints;
+        log("Name: %s%n", name);
+        // find max color
+        maxColor = worlds.stream().mapToInt(World::maxColor).max().getAsInt();
         switch (maxColor) {
             case A: nMods = 3; break;
             case B: nMods = 5; break;
@@ -261,56 +107,30 @@ public class CargoBotSolver {
         // init execute mod matrix
         execMods = new int[maxColor + 1];
         skipMods = new int[maxColor + 1];
-        for (int hh = 0; hh <= maxColor; hh++) {
-            for (int i = 0; i < nMods; i++) {
-                int mod = MODS[i];
-                if ((mod & restrict) != 0)
-                    continue;
-                if (checkMod(mod, hh))
-                    execMods[hh] |= mod;
-                else
-                    skipMods[hh] |= mod;
-            }
-        }
-        initExecuteModMatrixRec(0, 0);
+        initExecuteModMatrix();
         // init redundant pairs
         initRedundantMoves();
         initRedundantDowns();
-        // init search
-        this.goal = goal;
-        initPos = new Pos(init, hp, NONE, 0, packFrame(0, 0, 0));
-        visited.add(initPos);
+        // init search worlds
+        this.worlds = worlds.toArray(new World[worlds.size()]);
     }
 
     // ======================================= instance methods =======================================
 
-    private int[] convertAndCountColors(int[] ss) {
-        int[] cc = new int[MAX_COLORS + 1];
-        for (int i = 0; i < ss.length; i++) {
-            int s = ss[i];
-            int h = stackHeight(s);
-            if (h == 0)
-                continue;
-            if (s == h) {
-                // convert to stack of A's
-                s = 0;
-                for (int k = 0; k < h; k++) {
-                    s = stackPush(s, A);
-                }
-                ss[i] = s;
-                cc[A] += h;
-            } else {
-                // see what colors are used
-                for (int k = 0; k < h; k++) {
-                    int b = stackTop(s);
-                    assert b >= A && b <= MAX_COLORS;
-                    maxColor = Math.max(maxColor, b);
-                    s = stackPop(s);
-                    cc[b]++;
-                }
+    private void initExecuteModMatrix() {
+        for (int ch = 0; ch <= maxColor; ch++) {
+            executeModMatrix[ch] = EXECUTE_UNKNOWN_MOD;
+            for (int i = 0; i < nMods; i++) {
+                int mod = MODS[i];
+                if ((mod & constraints.mod) != 0)
+                    continue;
+                if (checkMod(mod, ch))
+                    execMods[ch] |= mod;
+                else
+                    skipMods[ch] |= mod;
             }
         }
-        return cc;
+        initExecuteModMatrixRec(0, 0);
     }
 
     private void initExecuteModMatrixRec(int i, int mod) {
@@ -321,39 +141,39 @@ public class CargoBotSolver {
             return;
         }
         // check all "head holds" states
-        for (int hh = 0; hh <= maxColor; hh++) {
-            boolean execute = (execMods[hh] & mod) != 0;
-            boolean skip = (skipMods[hh] & mod) != 0;
+        for (int ch = 0; ch <= maxColor; ch++) {
+            boolean execute = (execMods[ch] & mod) != 0;
+            boolean skip = (skipMods[ch] & mod) != 0;
             if (execute && skip)
-                executeModMatrix[mod | hh] = EXECUTE_UNKNOWN_MOD;
+                executeModMatrix[mod | ch] = EXECUTE_UNKNOWN_MOD;
             else if (execute)
-                executeModMatrix[mod | hh] = EXECUTE_OK;
+                executeModMatrix[mod | ch] = EXECUTE_OK;
             else if (skip)
-                executeModMatrix[mod | hh] = EXECUTE_FAIL;
+                executeModMatrix[mod | ch] = EXECUTE_FAIL;
         }
     }
 
     private void initRedundantMoves() {
         // will record possible profiles of the pair of conditional moves (3 bits per hand contents)
-        int hp0 = 2;
+        int cp0 = 2;
         int bitsPerProfile = 3;
         boolean[] seenProfile = new boolean[1 << (bitsPerProfile * (maxColor + 1))];
         int[] moves = new int[]{RIGHT, LEFT};
         // mark "empty profile" (never does anything) as redundant
         int profile = 0;
-        for (int hh = 0; hh <= maxColor; hh++) {
-            profile = (profile << bitsPerProfile) + hp0;
+        for (int ch = 0; ch <= maxColor; ch++) {
+            profile = (profile << bitsPerProfile) + cp0;
         }
         // mark as "seen" all profiles of single cond moves -- all their double moves reproductions are redundant
         for (int modI = 0; modI < nMods; modI++) {
             int mod = MODS[modI];
             for (int move : moves) {
                 profile = 0;
-                for (int hh = 0; hh <= maxColor; hh++) {
-                    int hp = hp0;
-                    if (checkMod(mod, hh))
-                        hp += move == RIGHT ? 1 : -1;
-                    profile = (profile << bitsPerProfile) + hp;
+                for (int ch = 0; ch <= maxColor; ch++) {
+                    int cp = cp0;
+                    if (checkMod(mod, ch))
+                        cp += move == RIGHT ? 1 : -1;
+                    profile = (profile << bitsPerProfile) + cp;
                 }
                 seenProfile[profile] = true;
             }
@@ -366,24 +186,24 @@ public class CargoBotSolver {
                 for (int mod2i = 0; mod2i < nMods; mod2i++) {
                     int mod2 = MODS[mod2i];
                     for (int move2 : moves) {
-                        int minEnvelope = hp0;
-                        int maxEnvelope = hp0;
-                        int minFinish = hp0;
-                        int maxFinish = hp0;
+                        int minEnvelope = cp0;
+                        int maxEnvelope = cp0;
+                        int minFinish = cp0;
+                        int maxFinish = cp0;
                         profile = 0;
-                        for (int hh = 0; hh <= maxColor; hh++) {
-                            int hp = hp0;
-                            if (checkMod(mod1, hh))
-                                hp += move1 == RIGHT ? 1 : -1;
-                            minEnvelope = Math.min(minEnvelope, hp);
-                            maxEnvelope = Math.max(maxEnvelope, hp);
-                            if (checkMod(mod2, hh))
-                                hp += move2 == RIGHT ? 1 : -1;
-                            minEnvelope = Math.min(minEnvelope, hp);
-                            maxEnvelope = Math.max(maxEnvelope, hp);
-                            minFinish = Math.min(minFinish, hp);
-                            maxFinish = Math.max(maxFinish, hp);
-                            profile = (profile << bitsPerProfile) + hp;
+                        for (int ch = 0; ch <= maxColor; ch++) {
+                            int cp = cp0;
+                            if (checkMod(mod1, ch))
+                                cp += move1 == RIGHT ? 1 : -1;
+                            minEnvelope = Math.min(minEnvelope, cp);
+                            maxEnvelope = Math.max(maxEnvelope, cp);
+                            if (checkMod(mod2, ch))
+                                cp += move2 == RIGHT ? 1 : -1;
+                            minEnvelope = Math.min(minEnvelope, cp);
+                            maxEnvelope = Math.max(maxEnvelope, cp);
+                            minFinish = Math.min(minFinish, cp);
+                            maxFinish = Math.max(maxFinish, cp);
+                            profile = (profile << bitsPerProfile) + cp;
                         }
                         // record
                         int code1 = mod1 | move1;
@@ -420,17 +240,17 @@ public class CargoBotSolver {
         for (int modI = 0; modI < nMods; modI++) {
             int mod = MODS[modI];
             int profile = 0;
-            for (int hh = 0; hh <= maxColor; hh++) {
-                if (checkMod(mod, hh)) {
-                    if (hh == 0) {
+            for (int ch = 0; ch <= maxColor; ch++) {
+                if (checkMod(mod, ch)) {
+                    if (ch == 0) {
                         // took whatever color on board (if non-empty)
                         for (int b = A; b <= maxColor; b++) {
-                            profile |= 1 << (hh * (MAX_COLORS + 1) + b);
+                            profile |= 1 << (ch * (MAX_COLORS + 1) + b);
                         }
                     } else {
                         // put it on whatever color on top of the stack (even on empty)
                         for (int b = 0; b <= maxColor; b++) {
-                            profile |= 1 << (hh * (MAX_COLORS + 1) + b);
+                            profile |= 1 << (ch * (MAX_COLORS + 1) + b);
                         }
                     }
                 }
@@ -443,9 +263,9 @@ public class CargoBotSolver {
             for (int mod2i = 0; mod2i < nMods; mod2i++) {
                 int mod2 = MODS[mod2i];
                 int profile = 0;
-                for (int hh = 0; hh <= maxColor; hh++) {
+                for (int ch = 0; ch <= maxColor; ch++) {
                     for (int b = 0; b <= maxColor; b++) {
-                        int hh1 = hh;
+                        int hh1 = ch;
                         int b1 = b;
                         int sSize = 0;
                         // first DOWN op
@@ -475,7 +295,7 @@ public class CargoBotSolver {
                             }
                         }
                         if (sSize != 0) {
-                            profile |= 1 << (hh * (MAX_COLORS + 1) + b);
+                            profile |= 1 << (ch * (MAX_COLORS + 1) + b);
                         }
                     }
                 }
@@ -546,7 +366,7 @@ public class CargoBotSolver {
         initPruning();
         if (progressPhaser != null)
             progressPhaser.arriveAndAwaitAdvance();
-        boolean result = simulateCode0(0, initPos);
+        boolean result = simulateCode0(0, worlds[0]);
         if (progressPhaser != null)
             progressPhaser.arriveAndAwaitAdvance();
         return result;
@@ -555,7 +375,7 @@ public class CargoBotSolver {
     private void initPruning() {
         Arrays.fill(usedOps, 0);
         Arrays.fill(shallUseOp, 0);
-        if (IntStream.of(initPos.b).map(CargoBotSolver::stackHeight).sum() > 1) {
+        if (Stream.of(worlds).anyMatch(World::needsBothMoves)) {
             shallUseOp[LEFT] = 1;
             shallUseOp[RIGHT] = 1;
         }
@@ -564,82 +384,103 @@ public class CargoBotSolver {
             if (procLen[i] != 0)
                 shallUseOp[CALL_1 + i] = 1;
         }
-        shallUseOpSlots = IntStream.of(shallUseOp).sum();
         freeOpSlots = 0;
         for (int pi = 0; pi < MAX_PROCS; pi++) {
             for (int ii = 0; ii < procLen[pi]; ii++) {
-                if (code[pi * MAX_PROC_LEN + ii] == UNKNOWN)
+                int op = code[pi * MAX_PROC_LEN + ii] & OP_MASK;
+                if (op == UNKNOWN)
                     freeOpSlots++;
+                else
+                    usedOps[op]++;
             }
+        }
+        shallUseOpSlots = 0;
+        for (int i = 0; i < MAX_PROC_LEN; i++) {
+            if (shallUseOp[i] > usedOps[i])
+                shallUseOpSlots += shallUseOp[i] - usedOps[i];
         }
     }
 
-    // invariant -- pos is added to visited (needs to be copied before modification)
-    private boolean simulateCode0(int depth, Pos start) {
-        depth++;
+    private boolean simulateCode0(int depth, World world) {
         cntTotal[depth]++; // track attempts at each depth
-        Pos pos = start;
-        sim_loop:
+        world.save(depth);
+    sim_loop:
         while (true) {
-            // here pos was added to hash -- no longer can no longer release it -- allocate a copy
+            Pos pos = world.pos;
             int pi = unpackProc(pos.sp, pos.cs); // proc index
             int ii = unpackSlot(pos.sp, pos.cs); // instr index
             int c = code[pi * MAX_PROC_LEN + ii];
-            if (c == UNKNOWN) {
-                if (searchCode0(depth, pos, pi, ii))
-                    return true;
-                break;
-            }
-            // now actually (try to) execute code
-            Pos copy = visited.allocCopy(pos); // <-- ALLOCATED HERE
-            switch (executeOneStep(depth, copy, pi, ii, c)) {
-                case EXECUTE_FAIL:
-                    visited.release(copy);
-                    break sim_loop;
+            switch (executeOneStep(world, pos, pi, ii, c)) {
+                case EXECUTE_GOAL:
+                    // goal in this world -- check next world (if any)
+                    if (world.index >= worlds.length - 1)
+                        return true; // GOAL IN ALL WORLDS - we are done!
+                    if (simulateCode0(depth, worlds[world.index + 1]))
+                        return true; // GOAL IN ALL WORLDS - we are done!
+                    break sim_loop; // oops, not -- cleanup & continue looking
                 case EXECUTE_OK:
                     break; // continue execution in loop
+                case EXECUTE_UNKNOWN0:
+                    if (searchCode0(depth, world, pos, pi, ii, c))
+                        return true;
+                    break sim_loop;
                 case EXECUTE_UNKNOWN_MOD:
-                    visited.release(copy);
-                    if (searchMod(depth, pos, pi, ii))
+                    if (searchMod(depth, world, pos, pi, ii, c))
                         return true;
                     break sim_loop;
                 case EXECUTE_UNKNOWN_CODE:
-                    visited.release(copy);
-                    if (searchOp(depth, pos, pi, ii, (c & ~OP_MASK)))
+                    if (searchOp(depth, world, 0, pi, ii, c))
                         return true;
                     break sim_loop;
+                case EXECUTE_FAIL_BUMP_LEFT:
+                    cntBumpLeft[depth]++;
+                    break sim_loop;
+                case EXECUTE_FAIL_BUMP_RIGHT:
+                    cntBumpRight[depth]++;
+                    break sim_loop;
+                case EXECUTE_FAIL_TOO_HIGH:
+                    cntTooHigh[depth]++;
+                    break sim_loop;
+                case EXECUTE_FAIL_INF_LOOP:
+                    cntInfLoop[depth]++;
+                    break sim_loop;
+                case EXECUTE_FAIL_RETURNS:
+                    cntReturns[depth]++;
+                    break sim_loop;
+                case EXECUTE_FAIL_POISON:
+                    cntPoison[depth]++;
+                    break sim_loop;
+                case EXECUTE_FAIL_STACK_OVER:
+                    cntStackOver[depth]++;
+                    break sim_loop;
+                default:
+                    throw new AssertionError();
             }
             totalMovesMade++;
-            maxMovesMade = Math.max(maxMovesMade, visited.size);
-            if (Arrays.equals(copy.b, goal))
-                return true; // found solution
-            if (copy.sp < 0) {
-                cntFinished[depth]++;
-                visited.release(copy);
-                break; // return from top proc
+            if (world.movesMade() > constraints.maxMoves) {
+                cntTooManyMoves[depth]++;
+                break;
             }
-            if (!visited.add(copy)) {
-                cntInfLoop[depth]++;
-                visited.release(copy);
-                break; // repeated
-            }
-            pos = copy;  // <-- ADDED TO VISITED
         }
-        visited.removeUntil(start);
+        if (world.movesMade() > maxMovesMade) {
+            maxMovesMade = world.movesMade();
+            maxMovesSolution.assign(this);
+        }
+        world.rollback(depth);
         return false;
     }
 
-    // pos is a fresh copy here (can modify)
-    private int executeOneStep(int depth, Pos pos, int pi, int ii, int c) {
+    private int executeOneStep(World world, Pos pos, int pi, int ii, int c) {
+        if (c == UNKNOWN)
+            return EXECUTE_UNKNOWN0;
         int mod = c & ~OP_MASK;
-        switch (executeModMatrix[mod | pos.hh]) {
+        switch (executeModMatrix[mod | pos.ch]) {
             case EXECUTE_OK:
                 // execute this op (condition is true)
                 break;
             case EXECUTE_FAIL:
                 // skip this op (condition is false)
-                next(pos, pi, ii);
-                return EXECUTE_OK;
+                return next(world, pi, ii);
             case EXECUTE_UNKNOWN_MOD:
                 return EXECUTE_UNKNOWN_MOD;
             default:
@@ -648,40 +489,41 @@ public class CargoBotSolver {
         int op = c & OP_MASK;
         switch (op) {
             case DOWN:
-                int s = pos.b[pos.hp];
-                if (pos.hh != NONE) {
-                    pos.b[pos.hp] = stackPush(s, pos.hh);
-                    pos.hh = NONE;
+                int s = pos.b[pos.cp];
+                if (pos.ch != NONE) {
+                    pos = world.copyPos();
+                    pos.b[pos.cp] = stackPush(s, pos.ch);
+                    pos.ch = NONE;
                 } else if (stackHeight(s) > 0) {
-                    pos.hh = stackTop(s);
-                    pos.b[pos.hp] = stackPop(s);
+                    int ch = stackTop(s);
+                    if (ch == POISON) {
+                        return EXECUTE_FAIL_POISON;
+                    }
+                    pos = world.copyPos();
+                    pos.ch = ch;
+                    pos.b[pos.cp] = stackPop(s);
                 }
-                next(pos, pi, ii);
-                return EXECUTE_OK;
+                return next(world, pi, ii);
             case RIGHT:
-                if (pos.hp >= pos.b.length - 1) {
-                    cntBumpRight[depth]++;
-                    return EXECUTE_FAIL;
+                if (pos.cp >= pos.b.length - 1) {
+                    return EXECUTE_FAIL_BUMP_RIGHT;
                 }
-                if (stackHeight(pos.b[pos.hp]) >= MAX_HEIGHT) {
-                    cntTooHigh[depth]++;
-                    return EXECUTE_FAIL; // cannot move when stack at the max height
+                if (stackHeight(pos.b[pos.cp]) >= MAX_HEIGHT) {
+                    return EXECUTE_FAIL_TOO_HIGH; // cannot move when stack at the max height
                 }
-                pos.hp++;
-                next(pos, pi, ii);
-                return EXECUTE_OK;
+                pos = world.copyPos();
+                pos.cp++;
+                return next(world, pi, ii);
             case LEFT:
-                if (pos.hp <= 0) {
-                    cntBumpLeft[depth]++;
-                    return EXECUTE_FAIL;
+                if (pos.cp <= 0) {
+                    return EXECUTE_FAIL_BUMP_LEFT;
                 }
-                if (stackHeight(pos.b[pos.hp]) >= MAX_HEIGHT) {
-                    cntTooHigh[depth]++;
-                    return EXECUTE_FAIL; // cannot move when stack at the max height
+                if (stackHeight(pos.b[pos.cp]) >= MAX_HEIGHT) {
+                    return EXECUTE_FAIL_TOO_HIGH; // cannot move when stack at the max height
                 }
-                pos.hp--;
-                next(pos, pi, ii);
-                return EXECUTE_OK;
+                pos = world.copyPos();
+                pos.cp--;
+                return next(world, pi, ii);
             case UNKNOWN:
                 return EXECUTE_UNKNOWN_CODE;
             // bail out for all the calls
@@ -689,24 +531,37 @@ public class CargoBotSolver {
         // calls
         int ci = op - CALL_1;
         assert ci >= 0;
-        if (ii == procLen[pi] - 1) {
-            // any tail call is done "in-place"
-        } else {
+        pos = world.copyPos();
+        // any tail call is done "in-place"
+        if (ii < procLen[pi] - 1) {
             // other call -- will return to next instruction (note -- it was not a tail call!)
             pos.cs = clearFrame(pos.sp, pos.cs) | packFrame(pos.sp, pi, ii + 1);
             if (pos.sp < MAX_SP) {
                 pos.sp += BITS_PER_FRAME;
             } else {
+                // stack overflow
+                if (constraints.ret) {
+                    // it is an error only when we are required to return for solution
+                    world.undoCopy();
+                    return EXECUTE_FAIL_STACK_OVER;
+                }
                 // shift stack on overflow (forget oldest)
                 pos.cs = pos.cs >>> BITS_PER_FRAME;
             }
         }
         // record new proc & instruction in the current activation record
         pos.cs = clearFrame(pos.sp, pos.cs) | packFrame(pos.sp, ci, 0);
+        pos.movesMade++;
+        // check for infinite loop on call (and on call only!)
+        if (!world.checkVisitedAndCommit()) {
+            world.undoCopy();
+            return EXECUTE_FAIL_INF_LOOP;
+        }
         return EXECUTE_OK;
     }
 
-    private void next(Pos pos, int pi, int ii) {
+    private int next(World world, int pi, int ii) {
+        Pos pos = world.copyPos();
         // instr index++
         if (++ii >= procLen[pi]) {
             // return
@@ -716,37 +571,66 @@ public class CargoBotSolver {
             // update frame
             pos.cs = clearFrame(pos.sp, pos.cs) | packFrame(pos.sp, pi, ii);
         }
+        pos.movesMade++;
+        if (Arrays.equals(world.goal, pos.b)
+                && (!constraints.ret || pos.sp < 0)
+                && (constraints.goalcp < 0 || pos.cp == constraints.goalcp))
+        {
+            world.commitPos();
+            return EXECUTE_GOAL;
+        }
+        if (pos.sp < 0) {
+            world.undoCopy();
+            return EXECUTE_FAIL_RETURNS;
+        }
+        world.commitPos();
+        return EXECUTE_OK;
     }
 
-    // invariant -- pos is added to visited (needs to be copied before modification)
-    private boolean searchCode0(int depth, Pos pos, int pi, int ii) {
+    private boolean searchCode0(int depth, World world, Pos pos, int pi, int ii, int c) {
         assert code[pi * MAX_PROC_LEN + ii] == UNKNOWN;
         // try to execute something (don't commit to exact condition)
-        if (searchOp(depth, pos, pi, ii, execMods[pos.hh]))
+        if (searchOp(depth, world, execMods[pos.ch], pi, ii, c))
             return true;
         // try to skip instruction (don't commit what instruction yet)
-        int mod = skipMods[pos.hh];
-        if (mod != 0) { // if conds can be used
-            code[pi * MAX_PROC_LEN + ii] = mod | UNKNOWN;
-            if (simulateCode0(depth, pos))
+        int mod = skipMods[pos.ch];
+        if (mod != 0) { // if mods can be used
+            code[pi * MAX_PROC_LEN + ii] = mod;
+            if (simulateCode0(depth + 1, world))
                 return true;
         }
         code[pi * MAX_PROC_LEN + ii] = UNKNOWN;
         return false;
     }
 
-    private boolean searchOp(int depth, Pos pos, int pi, int ii, int mod) {
+    private boolean searchMod(int depth, World world, Pos pos, int pi, int ii, int c) {
+        assert code[pi * MAX_PROC_LEN + ii] == c;
+        int mod = c & ~OP_MASK;
+        int op = c & OP_MASK;
+        // assume executed
+        if (verifyAndSimulateCode(depth, world, pi, ii, mod & execMods[pos.ch], op))
+            return true;
+        // assume skipped
+        if (verifyAndSimulateCode(depth, world, pi, ii, mod & skipMods[pos.ch], op))
+            return true;
+        code[pi * MAX_PROC_LEN + ii] = c;
+        return false;
+    }
+
+    private boolean searchOp(int depth, World world, int useMod, int pi, int ii, int c) {
+        int mod = c & ~OP_MASK;
+        assert code[pi * MAX_PROC_LEN + ii] == mod;
         for (int op : OPS) {
             int ci = op - CALL_1; // "calls to" index
             if (ci > 0 && procLen[ci] == 0)
                 break; // call to absent proc -- don't try & break loop
-            if (ci > 1 && usedOps[ci - 1] == 0)
-                break; // must first call to PROC_2, then PROC_3, etc
+            if (ci > 1 && usedOps[op - 1] == 0)
+                break; // symmetry breaking -- must first call to PROC_2, then PROC_3, etc
             if (usedOps[op]++ < shallUseOp[op])
                 shallUseOpSlots--;
             freeOpSlots--;
             if (freeOpSlots >= shallUseOpSlots) {
-                if (verifyAndSimulateCode(depth, pos, pi, ii, mod, op))
+                if (verifyAndSimulateCode(depth, world, pi, ii, mod | useMod, op))
                     return true;
             } else {
                 cntFutile[depth + 1]++;
@@ -755,26 +639,11 @@ public class CargoBotSolver {
                 shallUseOpSlots++;
             freeOpSlots++;
         }
-        code[pi * MAX_PROC_LEN + ii] = mod | UNKNOWN;
+        code[pi * MAX_PROC_LEN + ii] = mod;
         return false;
     }
 
-    // invariant -- pos is added to visited (needs to be copied before modification)
-    private boolean searchMod(int depth, Pos pos, int pi, int ii) {
-        int c = code[pi * MAX_PROC_LEN + ii];
-        int mod = c & ~OP_MASK;
-        int op = c & OP_MASK;
-        // assume executed
-        if (verifyAndSimulateCode(depth, pos, pi, ii, mod & execMods[pos.hh], op))
-            return true;
-        // assume skipped
-        if (verifyAndSimulateCode(depth, pos, pi, ii, mod & skipMods[pos.hh], op))
-            return true;
-        code[pi * MAX_PROC_LEN + ii] = c;
-        return false;
-    }
-
-    private boolean verifyAndSimulateCode(int depth, Pos pos, int pi, int ii, int mod, int op) {
+    private boolean verifyAndSimulateCode(int depth, World world, int pi, int ii, int mod, int op) {
         if (mod == ALWAYS && op == CALL_1 + pi && ii < procLen[pi] - 1) {
             cntUnreachable[depth + 1]++;
             return false; // unconditional self call -- code after this one is unreachable -- don't try
@@ -785,31 +654,50 @@ public class CargoBotSolver {
             return false; // redundant pair
         }
         code[pi * MAX_PROC_LEN + ii] = c;
-        return simulateCode0(depth, pos);
+        return simulateCode0(depth + 1, world);
     }
 
-    private String shape2Str() {
-        return String.format(Locale.US, "%d = [%s]",
-                IntStream.of(procLen).sum(),
-                IntStream.of(procLen).
-                        filter(len -> len != 0)
-                        .mapToObj(cl -> "" + cl)
-                        .collect(Collectors.joining(", ")));
-    }
-
-    private boolean searchShape(int i, int slots) {
+    private boolean searchShape(int i, int slots, int[] startShape, int shallUse) {
         if (slots == 0) {
+            if (shallUse != 0)
+                return false; // have not used all required procs
+            if (i < constraints.minProcs || i > constraints.maxProcs)
+                return false; // proc count constraints violated
             log("%s - Searching for solutions of size %s%n", time(), shape2Str());
             return simulateCodeInit();
         }
         if (i >= MAX_PROCS)
             return false;
-        int limit = Math.min(slots, MAX_PROC_LEN);
+        int limit = startShape != null ? startShape[i] : Math.min(slots, MAX_PROC_LEN);
         for (int cl = limit; cl >= 2; cl--) {
             procLen[i] = cl;
-            if (searchShape(i + 1, slots - cl))
-                return true;
+            // see if some required to use proc can be used here (length fits)
+            if (constraints.useFixed) {
+                if (searchShapeUse(i, i, slots, startShape, shallUse))
+                    return true;
+            } else for (int j = 0; j < MAX_PROCS; j++) {
+                if (searchShapeUse(i, j, slots, startShape, shallUse))
+                    return true;
+            }
+            // try arbitrary proc here (if allowed)
+            if (!constraints.useFixed || constraints.use.procLen[i] == 0) {
+                if (searchShape(i + 1, slots - cl, startShape, shallUse))
+                    return true;
+            }
             procLen[i] = 0;
+            startShape = null;
+        }
+        return false;
+    }
+
+    private boolean searchShapeUse(int i, int j, int slots, int[] startShape, int shallUse) {
+        int cl = procLen[i];
+        int shallUseBit = 1 << j;
+        if ((shallUse & shallUseBit) != 0 && constraints.use.procLen[j] == cl) {
+            System.arraycopy(constraints.use.code, MAX_PROC_LEN * j, code, MAX_PROC_LEN * i, MAX_PROC_LEN);
+            if (searchShape(i + 1, slots - cl, startShape, shallUse & ~shallUseBit))
+                return true;
+            Arrays.fill(code, MAX_PROC_LEN * i, MAX_PROC_LEN * i + MAX_PROC_LEN, 0);
         }
         return false;
     }
@@ -818,60 +706,78 @@ public class CargoBotSolver {
         return new SimpleDateFormat("yyyyMMdd-HHmmss.sss").format(new Date());
     }
 
-    String code2Str(int[] code, boolean pickOne) {
-        StringBuilder sb = new StringBuilder();
-        for (int pi = 0; pi < MAX_PROCS; pi++) {
-            int len = procLen[pi];
-            if (len == 0)
-                continue;
-            if (sb.length() > 0)
-                sb.append(' ');
-            sb.append("P").append(pi + 1).append(" [");
-            for (int ii = 0; ii < len; ii++) {
-                if (ii > 0)
-                    sb.append(' ');
-                int c = code[pi * MAX_PROC_LEN + ii];
-                sb.append(mod2Str(c, pickOne)).append(op2Str(c));
-            }
-            sb.append("]");
+    boolean verify(Solution solution) {
+        assign(solution);
+        log("Verifying solution of size %s%n", shape2Str());
+        log("%s%n", code2Str(true));
+        boolean ok = simulateCodeInit();
+        if (ok) {
+            logMovesMade();
+        } else {
+            log("!!! VERIFICATION FAILED !!!%n");
         }
-        return sb.toString();
+        Stream.of(worlds).forEach(World::restore);
+        return ok;
     }
 
-    private void go() throws IOException {
+    private void logMovesMade() {
+        log("This solution makes %s moves%n", Stream.of(worlds)
+                .map(world -> String.format(Locale.US, "%,d", world.movesMade()))
+                .collect(Collectors.joining(", ")));
+    }
+
+    void solve() throws IOException {
         progressPhaser = new Phaser(2);
         ProgressPrinter progressPrinter = new ProgressPrinter();
         progressPrinter.start();
         openLog();
         log("%s ===================================================%n", time());
         long time = System.currentTimeMillis();
-        for (int slots = 3;; slots++) {
-            if (searchShape(0, slots)) {
+        int startSize = IntStream.of(constraints.size).sum();
+        int[] startShape = constraints.size;
+        int shallUse = 0;
+        for (int i = 0; i < MAX_PROCS; i++) {
+            if (constraints.use.procLen[i] != 0)
+                shallUse |= (1 << i);
+        }
+        Arrays.fill(code, 0);
+        for (int slots = startSize;; slots++) {
+            if (searchShape(0, slots, startShape, shallUse)) {
                 long timeTotal = System.currentTimeMillis() - time;
                 log("%s ---------------------------------------------------%n", time());
                 log("Found solution for %s in %,d ms%n", name, timeTotal);
                 log("Solution of size %s%n", shape2Str());
-                log("%s%n", code2Str(code, true));
-                log("This solution makes %,d moves%n", visited.size);
-                log("Made max %,d moves while searching, total %,d moves%n", maxMovesMade, totalMovesMade);
-                log("Analyzed combinations and encountered backtracking reasons:%n");
-                logStats("Total      ", cntTotal);
-                logStats("Bump Left  ", cntBumpLeft);
-                logStats("Bump Right ", cntBumpRight);
-                logStats("Too High   ", cntTooHigh);
-                logStats("Inf Loop   ", cntInfLoop);
-                logStats("Finished   ", cntFinished);
-                logStats("Unreachable", cntUnreachable);
-                logStats("Redundant  ", cntRedundant);
-                logStats("Futile     ", cntFutile);
+                log("%s%n", code2Str(true));
+                logMovesMade();
+                logAllStats();
                 break;
             } else {
                 long timeTotal = System.currentTimeMillis() - time;
                 log("%s - Analyzed solutions up to size %d in %,d ms%n", time(), slots, timeTotal);
             }
+            startShape = null;
         }
         closeLog();
         progressPrinter.interrupt();
+        Stream.of(worlds).forEach(World::restore);
+    }
+
+    private void logAllStats() {
+        log("Made total of %,d moves while searching%n", totalMovesMade);
+        log("Made max of %,d moves with %s%n", maxMovesMade, maxMovesSolution);
+        log("Analyzed combinations and encountered backtracking reasons:%n");
+        logStats("Total         ", cntTotal);
+        logStats("Bump Left     ", cntBumpLeft);
+        logStats("Bump Right    ", cntBumpRight);
+        logStats("Too High      ", cntTooHigh);
+        logStats("Inf Loop      ", cntInfLoop);
+        logStats("Returns       ", cntReturns);
+        logStats("Unreachable   ", cntUnreachable);
+        logStats("Redundant     ", cntRedundant);
+        logStats("Futile        ", cntFutile);
+        logStats("Poison        ", cntPoison);
+        logStats("Stack Over    ", cntStackOver);
+        logStats("Too Many Moves", cntTooManyMoves);
     }
 
     private void logStats(String stat, long[] cnt) {
@@ -880,7 +786,7 @@ public class CargoBotSolver {
         int maxDIndex = 0;
         long sum = 0;
         StringBuilder sb = new StringBuilder();
-        for (int depth = 1; depth < cnt.length; depth++) {
+        for (int depth = 0; depth < cnt.length; depth++) {
             long t = cnt[depth];
             sum += t;
             if (t > maxDCnt) {
@@ -890,12 +796,13 @@ public class CargoBotSolver {
             if (t != 0) {
                 maxD = depth;
             }
-            if (depth <= 20) {
+            if (depth < 20) {
                 sb.append(String.format(Locale.US, " %,d", t));
             }
         }
-        log("%s : %,13d at depth up to %2d, max %,13d at depth %2d, at first depths:%s%n",
-                stat, sum, maxD, maxDCnt, maxDIndex, sb);
+        if (sum != 0)
+            log("%s : %,14d at depth up to %2d, max %,14d at depth %2d, at first depths:%s%n",
+                    stat, sum, maxD, maxDCnt, maxDIndex, sb);
     }
 
     private void log(String fmt, Object... args) {
@@ -908,7 +815,7 @@ public class CargoBotSolver {
         File dir = new File("logs");
         dir.mkdirs();
         File file = new File(dir, name + ".log");
-        log = new PrintWriter(new FileWriter(file, true));
+        log = new PrintWriter(new FileWriter(file, true), true);
     }
 
     private void closeLog() {
@@ -916,231 +823,58 @@ public class CargoBotSolver {
         log = null;
     }
 
-    // ======================================= static methods =======================================
-
-    static boolean checkMod(int mod, int hh) {
-        switch (mod) {
-            case ALWAYS: return true;
-            case WHEN_NONE: return hh == NONE;
-            case WHEN_A: return hh == A;
-            case WHEN_B: return hh == B;
-            case WHEN_C: return hh == C;
-            case WHEN_D: return hh == D;
-            case WHEN_ANY: return hh != NONE;
-            default: throw new AssertionError();
-        }
-    }
-
-    static String mod2Str(int c, boolean pickOne) {
-        int mod = c & ~OP_MASK;
-        if (mod == 0)
-            return "_";
-        for (int i = 0; i < MODS.length; i++) {
-            if (mod == MODS[i] || pickOne && (mod & MODS[i]) != 0) {
-                return MOD_STRS[i];
-            }
-        }
-        return "?";
-    }
-
-    static String op2Str(int c) {
-        int op = c & OP_MASK;
-        if (op == UNKNOWN)
-            return "_";
-        for (int i = 0; i < OPS.length; i++) {
-            if (op == OPS[i]) {
-                return OP_STRS[i];
-            }
-        }
-        return "?";
-    }
-
-    static int stackHeight(int s) {
-        return s & STACK_HEIGHT_MASK;
-    }
-
-    static int stackTop(int s) {
-        return (s >> BITS_PER_HEIGHT) & STACK_COLOR_MASK;
-    }
-
-    static int stackPush(int s, int b) {
-        int h = stackHeight(s);
-        assert h < MAX_HEIGHT;
-        return (h + 1) | ((s & ~STACK_HEIGHT_MASK) << BITS_PER_COLOR) | (b << BITS_PER_HEIGHT);
-    }
-
-    static int stackPop(int s) {
-        int h = stackHeight(s);
-        assert h > 0;
-        return (h - 1) | ((s >> BITS_PER_COLOR) & ~STACK_HEIGHT_MASK);
-    }
-
-    static long packFrame(int sp, int proc, int slot) {
-        return (((long)proc << BITS_PER_SLOT) | slot) << sp;
-    }
-
-    static long clearFrame(int sp, long frame) {
-        return frame & ~(FRAME_FULL_MASK << sp);
-    }
-
-    static int unpackProc(int sp, long frame) {
-        return (int)((frame >>> (sp + BITS_PER_SLOT)) & FRAME_PROC_MASK);
-    }
-
-    static int unpackSlot(int sp, long frame) {
-        return (int)((frame >>> sp) & FRAME_SLOT_MASK);
-    }
-
     // ======================================= helper classes =======================================
 
-    static class Pos {
-        int[] b;      // board
-        int hp;       // hand pointer
-        int hh;       // hand holds
-        int sp;       // stack pointer
-        long cs;      // call stack
-
-        int hIndex;   // index in hash
-        Pos hNext;    // pool in hash
-
-        Pos(int bs) {
-            b = new int[bs];
-        }
-
-        Pos(int[] b, int hp, int hh, int sp, long cs) {
-            this.b = b;
-            this.hp = hp;
-            this.hh = hh;
-            this.sp = sp;
-            this.cs = cs;
-        }
-
-        void assign(Pos pos) {
-            System.arraycopy(pos.b, 0, b, 0, pos.b.length);
-            this.hp = pos.hp;
-            this.hh = pos.hh;
-            this.sp = pos.sp;
-            this.cs = pos.cs;
+    static class Console extends Thread {
+        Console() {
+            super("Console");
+            setDaemon(true);
         }
 
         @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            Pos pos = (Pos) o;
-            return hp == pos.hp && hh == pos.hh && sp == pos.sp && cs == pos.cs && Arrays.equals(b, pos.b);
-        }
+        public void run() {
+            BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
+            try {
+                while (true) {
+                    String line = in.readLine();
+                    if (line == null)
+                        break;
+                    line = line.trim();
+                    if (line.isEmpty())
+                        continue;
+                    CargoBotSolver solver = SOLVER;
+                    switch (Character.toUpperCase(line.charAt(0))) {
+                        case 'S':
+                            if (solver != null)
+                                solver.logAllStats();
+                            break;
+                        default:
+                            consoleHelp();
+                    }
 
-        @Override
-        public int hashCode() {
-            int result = Arrays.hashCode(b);
-            result = 31 * result + hp;
-            result = 31 * result + hh;
-            result = 31 * result + sp;
-            result = 31 * result + Long.hashCode(cs);
-            return result;
-        }
-    }
-
-    static class Hash {
-        static final int MAGIC = 0x9E3779B9;
-        static final int START_BITS = 8;
-
-        Pos[] a = new Pos[1 << START_BITS];
-        int shift = 32 - START_BITS;
-        int size;
-        int limit = limit(1 << START_BITS);
-
-        Pos free;
-        Pos last;
-
-        Pos allocCopy(Pos pos) {
-            Pos res;
-            if (free != null) {
-                res = free;
-                free = res.hNext;
-                res.hNext = null;
-            } else
-                res = new Pos(pos.b.length);
-            res.assign(pos);
-            return res;
-        }
-
-        void release(Pos pos) {
-            pos.hNext = free;
-            free = pos;
-        }
-
-        void removeUntil(Pos stop) {
-            Pos pos = last;
-            while (pos != stop) {
-                Pos next = pos.hNext;
-                a[pos.hIndex] = null;
-                release(pos);
-                pos = next;
-                size--;
-            }
-            last = stop;
-        }
-
-        boolean add(Pos pos) {
-            if (size >= limit)
-                resize();
-            if (!addImpl(pos))
-                return false;
-            size++;
-            pos.hNext = last;
-            last = pos;
-            return true;
-        }
-
-        boolean addImpl(Pos pos) {
-            int h = (pos.hashCode() * MAGIC) >>> shift;
-            while (true) {
-                Pos q = a[h];
-                if (q == null) {
-                    pos.hIndex = h;
-                    a[h] = pos;
-                    return true;
                 }
-                if (q.equals(pos))
-                    return false;
-                if (h == 0)
-                    h = a.length;
-                h--;
+            } catch (IOException e) {
+                e.printStackTrace(System.out);
             }
         }
 
-        private int limit(int len) {
-            return len * 2 / 3;
-        }
-
-        private void resize() {
-            Pos[] old = a;
-            int len = old.length * 2;
-            a = new Pos[len];
-            limit = limit(len);
-            shift--;
-            for (Pos pos : old) {
-                if (pos != null) {
-                    boolean success = addImpl(pos);
-                    assert success;
-                }
-            }
+        private void consoleHelp() {
+            System.out.println("Type 's' on the console to get current stats");
         }
     }
 
     class ProgressPrinter extends Thread {
-        private int[] codeCopy = new int[MAX_PROCS * MAX_PROC_LEN];
+        private final Solution copy = new Solution();
 
-        public ProgressPrinter() {
+        ProgressPrinter() {
+            super("ProgressPrinter");
             setDaemon(true);
         }
 
         @Override
         public void run() {
             try {
-                while (true) {
+                while (!Thread.currentThread().isInterrupted()) {
                     progressPhaser.arriveAndAwaitAdvance();
                     showProgress(progressPhaser.arrive());
                 }
@@ -1157,9 +891,11 @@ public class CargoBotSolver {
                 } catch (TimeoutException e) {
                     // print & continue
                 }
-                System.arraycopy(code, 0, codeCopy, 0, codeCopy.length);
-                log("%s - working on %s%n", time(), code2Str(codeCopy, false));
+                // quick racy read here, but it does not matter, because it is for information purposes only
+                copy.assign(CargoBotSolver.this);
+                log("%s - working on %s%n", time(), copy);
             }
         }
     }
+
 }

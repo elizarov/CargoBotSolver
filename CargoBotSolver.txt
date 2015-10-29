@@ -1,337 +1,551 @@
 # --------------------------------- TUTORIAL ---------------------------------
 
 # Solution of size 3 = [3]
-# P1 [ v  >  v]
+= P1 [ v  >  v]
 -Tutorial Cargo 101
-: # No conditions are allowed
-0
+:mod= # No conditions are allowed
 1 0
 0 1
 
 # Solution of size 4 = [4]
-# P1 [ v  >  v  1]
+= P1 [ v  >  v  1]
 -Tutorial Transporter
-: # No conditions are allowed
-0
+:mod= # No conditions are allowed
 1 0 0 0
 0 0 0 1
 
 # Solution of size 5 = [5]
-# P1 [ v  >  v  <  1]
+= P1 [ v  >  v  <  1]
 -Tutorial Re-Curses
-: # No conditions are allowed
-0
+:mod= # No conditions are allowed
 4 0
 0 4
 
 # Solution of size 10 = [6, 4]
-# P1 [ >  2  2  2  2  1] P2 [ <  v  >  v]
+= P1 [ >  2  2  2  2  1] P2 [ <  v  >  v]
 -Tutorial Inverter
-: # No conditions are allowed
-0
+:mod= # No conditions are allowed
 ABCD 0 0 0 0 0
 0 0 0 0 0 DCBA
 
 # Solution of size 5 = [5]
-# P1 [ v  >  v N<  1]
+= P1 [ v  >  v N<  1]
 -Tutorial From Beneath
-0
 BAAAA 0 0
 0 AAAA B
 
 # Solution of size 9 = [5, 4]
-# P1 [ >  2  2  2  1] P2 [ v  <  v  >]
+= P1 [ >  2  2  2  1] P2 [ v  <  v  >]
 -Tutorial Go Left
-: # No conditions are allowed
-0
+:mod= # No conditions are allowed
 0 AAA BBB CCC
 AAA BBB CCC 0
 
 # --------------------------------- EASY ---------------------------------
 
 # Solution of size 5 = [5]
-# P1 [ v  >  v N<  1]
+= P1 [ v  >  v N<  1]
 -Easy Double Flip
-0
 ABCD 0 0
 0 0 ABCD
 
 # Solution of size 4 = [4]
-# P1 [ v N> *<  1]
+= P1 [ v N> *<  1]
 -Easy Go Left 2
-0
 0 AAA BBB CCC
 AAA BBB CCC 0
 
 # Solution of size 9 = [7, 2]
-# P1 [ v  >  v  2  2  >  1] P2 [ <  v]
+= P1 [ v  >  v  2  2  >  1] P2 [ <  v]
 -Easy Shuffle Sort
-: # No conditions are allowed
-1
+:mod=      # No conditions are allowed
+:initcp=1  # Claw starts at second stack
 0 ABABAB 0
 AAA 0 BBB
 
 # Solution of size 4 = [4]
-# P1 [ v N> A<  1]
+= P1 [ v N> A<  1]
 -Easy Go the Distance
-0
 B B B B B 0 AAAA
 B B B B B AAAA 0
 
 # Solution of size 7 = [7]
-# P1 [ v  > A< N1 Bv  <  1]
+= P1 [ v  > A< N1 Bv  <  1]
 -Easy Color Sort
-1
+:initcp=1  # Claw starts at second stack
 0 BBABAA 0
 AAA 0 BBB
 
 # Solution of size 8 = [6, 2]
-# P1 [ v *>  2  2  2  1] P2 [N< *>]
+= P1 [ v *>  2  2  2  1] P2 [N< *>]
 -Easy Walking Piles
-0
 4 4 4 0 0 0 0
 0 0 0 0 4 4 4
 
 # --------------------------------- MEDIUM ---------------------------------
 
 # Solution of size 5 = [5]
-# P1 [ v  >  v N<  1]
+= P1 [ v  >  v N<  1]
 -Medium Repeat Inverter
-0
 ABCD 0 ABCD 0 ABCD 0
 0 DCBA 0 DCBA 0 DCBA
 
 # Solution of size 7 = [7]
-# P1 [ v B> B1  < N1 *v  >]
+= P1 [ v B> B1  < N1 *v  >]
 -Medium Double Sort
-1
+:initcp=1  # Claw starts at second stack
 0 AABB BABA 0
 AAAA 0 0 BBBB
 
 # Solution of size 6 = [6]
-# P1 [ v  > N> Bv  <  1]
+= P1 [ v  > N> Bv  <  1]
 -Medium Mirror
-0
 BBBB AA A A AA 0
 0 AA A A AA BBBB
 
 # Solution of size 7 = [5, 2]
-# P1 [ v  > *2  2  1] P2 [ v N<]
+= P1 [ v  > *2  2  1] P2 [ v N<]
 -Medium Lay it Out
-0
 6 0 0 0 0 0
 1 1 1 1 1 1
 
 # Solution of size 6 = [6]
-# P1 [Nv N>  v N< *>  1]
+= P1 [Nv N>  v N< *>  1]
 -Medium The Stacker
-4
+:initcp=4  # Claw starts at fifth stack
 0 1 1 1 1 1 1 0
 0 0 0 0 0 0 0 6
 
 # Solution of size 6 = [6]
-# P1 [ v  > N> Av  <  1]
+= P1 [ v  > N> Av  <  1]
 -Medium Clarity
-0
 ABA AAABA BABA BAA 0
 AB AAAB BAB B AAAAA
 
 # --------------------------------- HARD ---------------------------------
 
 # Solution of size 7 = [3, 4]
-# P1 [ v  2  1] P2 [ >  v N2  <]
+= P1 [ v  2  1] P2 [ >  v N2  <]
 -Hard Come Together
-0
 0 0 3 1 0 0 2
 6 0 0 0 0 0 0
 
 # Solution of size 7 = [3, 4]
-# P1 [ 2  2 N1] P2 [N>  v B1 *<]
+= P1 [ 2  2 N1] P2 [N>  v B1 *<]
 -Hard Come Together 2
-0
 0 B BAA B BA B AAAA
 AAAAAAA B B B B B 0
 
 # Solution of size 6 = [6]
-# P1 [ v *1 N>  v N1 B<]
+= P1 [ v *1 N>  v N1 B<]
 -Hard Up The Greens
-0
 A BB A 0 BBB A BB BB
 ABB 0 ABBB 0 0 ABBBB 0 0
 
 # Solution of size 9 = [6, 3]
-# P1 [N>  v  2  2 B>  1] P2 [N<  v B>]
+= P1 [N>  v  2  2 B>  1] P2 [N<  v B>]
 -Hard Fill The Blanks
-0
 BBBB A 0 A 0 0 A 0
 0 A B A B B A B
 
 # Solution of size 6 = [6]
-# P1 [ v  > Bv  v N<  1]
+= P1 [ v  > Bv  v N<  1]
 -Hard Count The Blues
-0
 BAA 0 0 0 BA 0 0
 0 AA 0 B 0 A B
 
 # Solution of size 7 = [2, 5]
-# P1 [ 2  1] P2 [ v  > N2 Av  <]
+= P1 [ 2  1] P2 [ v  > N2 Av  <]
 -Hard Multi Sort
-0
 0 AB 0 BBA BABA AB A 0
 BBBBBB 0 0 0 0 0 0 AAAAAA
 
 # --------------------------------- CRAZY ---------------------------------
 
 # Solution of size 10 = [7, 3]
-# P1 [ 2 N< N2 N> N2  <  1] P2 [ v  >  v]
+= P1 [ 2 N< N2 N> N2  <  1] P2 [ v  >  v]
 -Crazy Divide by Two
-0
 4 0 2 0 6 0 4 0
 2 2 1 1 3 3 2 2
 
 # Solution of size 6 = [6]
-# P1 [ v  > *1  v  < N1]
+= P1 [ v  > *1  v  < N1]
 -Crazy Merger
-0
 AAA 0 BBB
 0 ABABAB 0
 
 # Solution of size 9 = [6, 3]
-# P1 [ >  2  > N> *2  1] P2 [ v  <  v]
+= P1 [ >  2  > N> *2  1] P2 [ v  <  v]
 -Crazy Even the Odds
-0
 AAAAA 0 BB 0 CCC 0 DDDD 0
 A AAAA 0 BB C CC 0 DDDD
 
 # ??? <= 16 >= 11
+# Solution by Kay Chan
+= P1 [ 3 B1  3] P2 [3 B1 N>  4  4  <] P3 [ 4  <  v  > A2] P4 [N>  v]
 -Crazy Genetic Code
-0
 ABBABA 0 BBB 0 AAA
 0 ABABBA 0 ABBABA 0
 
 # ??? <= 17 >= 10
+# Solution by Quinn Mahoney
+# It is optimal given this structure of main pass in P1 (see Crazy Multi Sort 2 Simplified 3)
+= P1 [Av  4 Cv  4 Dv  4 Bv  2] P2 [ 3  3  1] P3 [ <  <  <] P4 [ > Nv  >]
 -Crazy Multi Sort 2
-0
 0 ABCDB 0 CAADDB 0 CDBCA 0
 AAAA 0 CCCC 0 DDDD 0 BBBB
 
 # Solution of size 7 = [7]
-# P1 [ v  >  v  < A> B<  1]
+= P1 [ v  >  v  < A> B<  1]
 -Crazy The Swap
-1
+:initcp=1  # Claw starts at second stack
 AAA 0 BBB
 BBB 0 AAA
 
 # --------------------------------- IMPOSSIBLE ---------------------------------
 
-# ??? <= 14 >= 11
+# ??? <= 13 >= 11
+# Solution of size 13 = [3, 6, 4]
+= P1 [ 2  >  1] P2 [ >  v B3  < *3 *2] P3 [Av  2  v B3]
 -Impossible Restoring Order
-0
 0 ABAA BABA AAA B BA A 0
 0 AAA AA AAA 0 A A BBBBB
 
 # Solution of size 10 = [8, 2]
-# P1 [ v  > N> A2 N1  2 N< A1] P2 [ v  <]
+= P1 [ v  > N> A2 N1  2 N< A1] P2 [ v  <]
 -Impossible Changing Places
-0
 A AAA BBB 0 AAAA AA BBBB B
 AAA A 0 BBB AA AAAA B BBBB
 
 # ??? <= 14 >= 11
+# Solution by Jan Achrenius
+= P1 [ 4 *2  1] P2 [ 3 *2  3] P3 [ v  <  v  <  4  4] P4 [ v  >]
 -Impossible Palette Swap
-1
+:initcp=1  # Claw starts at second stack
+:size=8,3  # Have searched all up to 10 inclusive
 0 AB BABA BA BABA 0 BABABA 0
 0 BA ABAB AB ABAB 0 ABABAB 0
 
 # Solution of size 7 = [2, 5]
-# P1 [ 2  1] P2 [ v  > N2  v  <]
+= P1 [ 2  1] P2 [ v  > N2  v  <]
 -Impossible Mirror 2
-0
 3 2 1 0
 0 1 2 3
 
 # Solution of size 6 = [6]
-# P1 [ >  v  <  v *>  1]
+= P1 [ >  v  <  v *>  1]
 -Impossible Changing Places 2
-0
 1 3 1 4 0 2 4 3
 3 1 4 0 2 4 3 1
 
 # ??? <= 18 >= 11
+# Solution by Markus M?hlberger
+= P1 [ v *2  >  1] P2 [B3 A4  v *2 N4 B4 N3  v] P3 [ >  v  <] P4 [ <  v  >]
 -Impossible Vertical Sort
-0
 0 ABABB BAB ABBA BA BAAAB 0
 0 AABBB ABB AABB AB AAABB 0
 
 # --------------------------------- BONUS ---------------------------------
 
 # Solution of size 9 = [6, 3]
-# P1 [ 2  v N2 *>  2  1] P2 [ v N< *>]
+= P1 [ 2  v N2 *>  2  1] P2 [ v N< *>]
 -Bonus Count in Binary
-0
 6 0 0 0 0 0 0
 2 0 1 1 1 0 1
 
-# Solution in 8,2
+# Solution in 10 = [8, 2]
 # Note: actually, 5 progs up to 10 codes are available in this level (does not seem to be really needed)
 -Bonus Equalizer
-0
 0 AA A AAAAA 0 AA AAAA B
 AA AA AA AA AA AA AA B
 
-# Solution in 2,8
+# Solution in 10 = [2, 8]
 -Bonus Parting the Sea
-0
 0 AA AA AA AA AA 0
 AAAAA 0 0 0 0 0 AAAAA
 
 # Solution of size 8 = [8]
-# P1 [ v  >  v  <  <  v  >  1]
+= P1 [ v  >  v  <  <  v  >  1]
 -Bonus The Trick
-1
+:initcp=1  # Claw starts at second stack
 AB 0 BA
 BA 0 AB
 
 # --------------------------------- OTHER ---------------------------------
 
 # Solution of size 8 = [8]
-# P1 [ v  >  >  v  <  v N<  1]
+= P1 [ v  >  >  v  <  v N<  1]
 -Test 1
-0
 4 0 0 0 0 0 0
 0 2 0 2 0 0 0
 
 # Solution of size 5 = [5]
-# P1 [ v  >  v N<  1]
+= P1 [ v  >  v N<  1]
 -Test 2
-0
 4 0 0 0 0 0 0
 0 0 0 0 0 0 4
 
 # Solution of size 7 = [7]
-# P1 [ v *> *> A< N< C>  1]
+= P1 [ v *> *> A< N< C>  1]
 -Test 3
-0
 ABC 0 0 0
 0 A B C
 
+# Solution of size 7 = [3, 4]
+= P1 [ v  2  1] P2 [ >  v N2  <]
+-Hard Come Together Many Worlds
+:worlds=3  # simultaneously solve 3 worlds
+# one
+0 0 3 1 0 0 2
+6 0 0 0 0 0 0
+# two
+0 1 1 1 1 1 1
+6 0 0 0 0 0 0
+# three
+0 0 0 0 0 0 6
+6 0 0 0 0 0 0
+
+# --------------------------------- Impossible Vertical Sort Simplified ---------------------------------
+
 # Solution of size 9 = [7, 2]
-# P1 [ 2 A1  v  < N< A2  1] P2 [ v  >]
+= P1 [ 2 A1  v  < N< A2  1] P2 [ v  >]
 -Impossible Vertical Sort Simplified 1
-1
+:initcp=1  # Claw starts at second stack
 0 ABABB 0
 0 AABBB 0
 
 # Solution of size 10 = [8, 2]
-# P1 [ v  >  2 N1  2  v  > *1] P2 [ v  <]
+= P1 [ v  >  2 N1  2  v  > *1] P2 [ v  <]
 -Impossible Vertical Sort Simplified 2
-1
+:initcp=1  # Claw starts at second stack
 B ABABB B
 B AABBB B
 
 # Solution of size 10 = [5, 5]
-# P1 [ 2  < N1  < B2] P2 [ v A1 A1  >  v]
+= P1 [ 2  < N1  < B2] P2 [ v A1 A1  >  v]
 -Impossible Vertical Sort Simplified 3
-1
-AB ABABB ABAB
-AB AABBB ABAB
+:initcp=1  # Claw starts at second stack
+PB ABABB P # Put poison to the left and to the right of the central stack
+PB AABBB P
+
+# Solution of size 10 = [7, 3]
+= P1 [ 2  < N1 A1 A1  <  2] P2 [ v  >  v]
+-Impossible Vertical Sort Simplified 4
+:initcp=1  # Claw starts at second stack
+P ABABB P # Put poison to the left and to the right of the central stack
+P AABBB P
+
+# Solution of size 10 = [5, 5]
+= P1 [ 2  < N1  < B2] P2 [ v A1 A1  >  v]
+-Impossible Vertical Sort Simplified 5
+:initcp=1  # Claw starts at second stack
+P ABABB PPP # Put poison to the left and to the right of the central stack
+P AABBB PPP
+
+# Solution of size 11 = [8, 3]
+= P1 [ v B2  <  v  > N1 N2  v] P2 [ >  v  <]
+-Impossible Vertical Sort Simplified 6
+:ret        # require to return from main proc
+:initcp=1   # Claw starts at second stack
+0 ABABB PPP # Put poison to the right of the central stack
+0 AABBB PPP
+
+# ??? >= 12 [8,4]
+-Impossible Vertical Sort Simplified 7
+:ret       # require to return from main proc
+:size=8,3  # start searching from this size
+:initcp=1  # Claw starts at second stack
+:worlds=5  # simultaneously solve 5 worlds
+# Stack 1
+0 ABABB PPP # Put poison to the right of the central stack
+0 AABBB PPP
+# Stack 2
+PPPPB BAB PPPP
+PPPPB ABB PPPP
+# Stack 3
+PPB ABBA PP
+PPB AABB PP
+# Stack 4
+PPPB BA PPPPP
+PPPB AB PPPPP
+# Stack 5
+PB BAAAB 0
+PB AAABB 0
+
+# ??? >= 16 [8, 3, 3, 2]
+-Impossible Vertical Sort Simplified 8
+:initcp=1  # Claw starts at second stack
+:use=P1 [> v <] P2 [< v >] # use this subprocs in code
+0 ABABB BAB ABBA BA BAAAB 0
+0 AABBB ABB AABB AB AAABB 0
+
+# --------------------------------- Impossible Restoring Order Simplified ---------------------------------
+
+# Solution of size 10 = [8, 2]
+# This solution moves only one B box
+= P1 [ v *> B1  <  <  2 N1 *2] P2 [ v  >]
+-Impossible Restoring Order Simplified 1
+:ret     # require to return from main proc
+:initcp=1  # Claw starts at second stack
+P ABAA P # Put poison to the left and to the right of the central stack
+P AAA PB
+
+# Solution of size 9 = [5, 4]
+# This one is not generic enough w.r.t what it moves in some other way
+= P1 [B2  < N2  v  2] P2 [ >  v N< *1]
+-Impossible Restoring Order Simplified 2
+:ret     # require to return from main proc
+:initcp=1  # Claw starts at second stack
+P BABAA P # Put poison to the left and to the right of the central stack
+P AAA PBB
+
+# Solution of size 10 = [6, 4]
+# Cannot move two reds on top in a row
+= P1 [ v B2  < *2 *> *1] P2 [Av  >  1  v]
+-Impossible Restoring Order Simplified 3
+:ret     # require to return from main proc
+:initcp=1  # Claw starts at second stack
+P ABABAA P # Put poison to the left and to the right of the central stack
+P AAAA PBB
+
+# Solution of size 10 = [8, 2]
+# This one is not generic enough w.r.t what it moves in some other way
+= P1 [Nv B2  < N1  v  2 N< *1] P2 [ >  v]
+-Impossible Restoring Order Simplified 4
+:ret     # require to return from main proc
+:initcp=1  # Claw starts at second stack
+P ABAABB P # Put poison to the left and to the right of the central stack
+P AAA PBBB
+
+# Solution of size 10 = [6, 4]
+= P1 [B2  <  v N2  v  2] P2 [ >  v N< *1]
+-Impossible Restoring Order Simplified 5
+:ret       # require to return from main proc
+:worlds=6  # simultaneously solve 6 worlds
+:initcp=1  # Claw starts at second stack
+# Stack 1
+0 ABAA PPPP # Put poison to the right of the central stack
+0 AAA PPPPB
+# Stack 2
+PPA BABAB PPP
+PPA AA PPPBBB
+# Stach 3
+PA AAABBB P
+PA AAA PBBB
+# Stack 4
+PPA BBBB PP
+PPA 0 PPBBBB
+# Stack 5
+0 BABBBB P
+0 A PBBBBB
+# Stack 6
+PA ABBBBB 0
+PA A BBBBB
+
+# Solution of size 10 = [6, 4]
+= P1 [ >  v B2  < *2 *1] P2 [Av  1  v B2]
+-Impossible Restoring Order Simplified 6
+:ret       # require to return from main proc
+:worlds=6  # simultaneously solve 6 worlds
+# Claw starts at leftmost stack
+# Stack 1
+0 ABAA PPPP # Put poison to the right of the central stack
+0 AAA PPPPB
+# Stack 2
+PPA BABAB PPP
+PPA AA PPPBBB
+# Stach 3
+PA AAABBB P
+PA AAA PBBB
+# Stack 4
+PPA BBBB PP
+PPA 0 PPBBBB
+# Stack 5
+0 BABBBB P
+0 A PBBBBB
+# Stack 6
+PA ABBBBB 0
+PA A BBBBB
+
+# ??? >= 11 - does not give advantage
+-Impossible Restoring Order Simplified 7
+:ret       # require to return from main proc
+:size=2,8  # start searching from this size
+:worlds=6  # simultaneously solve 6 worlds
+:goalcp=1  # claw shall stop over the second stack
+# Claw starts at leftmost stack
+# Stack 1
+0 ABAA PPPP # Put poison to the right of the central stack
+0 AAA PPPPB
+# Stack 2
+PPA BABAB PPP
+PPA AA PPPBBB
+# Stach 3
+PA AAABBB P
+PA AAA PBBB
+# Stack 4
+PPA BBBB PP
+PPA 0 PPBBBB
+# Stack 5
+0 BABBBB P
+0 A PBBBBB
+# Stack 6
+PA ABBBBB 0
+PA A BBBBB
+
+# --------------------------------- Impossible Palette Swap Simplified ---------------------------------
+
+# Solution of size 11 = [8, 3]
+= P1 [ 2  < B2 N1 *<  2  < A1] P2 [ v  >  v]
+-Impossible Palette Swap Simplified 1
+:ret       # require to return from main proc
+:initcp=1  # Claw starts at second stack
+PP BABA PP
+PP ABAB PP
+
+# ??? >= 12 -- does not improve existing solution of 14
+-Impossible Palette Swap Simplified 2
+:ret       # require to return from main proc
+:initcp=1  # Claw starts at second stack
+:size=8,3  # start searching from this size (it is at least as hard as previous one)
+:worlds=6  # simultaneously solve 6 worlds
+# Stack 1
+0 AB PPPP
+0 BA PPPP
+# Stack 2
+PP BABA PP
+PP ABAB PP
+# Stack 3
+PPPP BA PPPP
+PPPP AB PPPP
+# Stack 4
+PP BABA 0
+PP ABAB 0
+# Stack 5
+PPPP 0 PPPPPP
+PPPP 0 PPPPPP
+# Stack 6
+0 BABABA 0
+0 ABABAB 0
+
+# --------------------------------- Crazy Multi Sort 2 Simplified ---------------------------------
+
+# Solution of size 9 = [4, 5]
+= P1 [N2 *2  <  1] P2 [A<  v A2  >  v]
+-Crazy Multi Sort 2 Simplified 1
+0 ABBABB 0 BAAABA
+AAAAAA 0 BBBBBB 0
+
+# ??? >= 11
+-Crazy Multi Sort 2 Simplified 2
+0 ABCBCA 0 CAABCB 0
+AAAA 0 CCCC 0 BBBB
+
+# Solution of size 17 = [8, 3, 4, 2]
+= P1 [Av  2 Cv  2 Dv  2 Bv  3] P2 [ > Nv  >] P3 [ 4  4  4  1] P4 [ <  <]
+-Crazy Multi Sort 2 Simplified 3
+:use=P1 [Av 2 Cv 2 Dv 2 Bv 3]
+:usefixed
+:minprocs=3
+0 ABCDB 0 CAADDB 0 CDBCA 0
+AAAA 0 CCCC 0 DDDD 0 BBBB
