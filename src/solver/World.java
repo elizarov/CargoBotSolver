@@ -133,6 +133,8 @@ class World {
         undoCopy();
         visited.freeUntil(initPos);
         Arrays.fill(savePos, null);
+        assert initPos.status == Pos.IN_HASH;
+        pos = initPos;
     }
 
     boolean needsBothMoves() {
