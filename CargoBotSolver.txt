@@ -180,14 +180,16 @@ AAA 0 BBB
 AAAAA 0 BB 0 CCC 0 DDDD 0
 A AAAA 0 BB C CC 0 DDDD
 
-# ??? <= 16 >= 11
-# Solution by Kay Chan
+# ??? <= 15 >= 11
+# Solution by Kay Chan in 16
 = P1 [ 3 B1  3] P2 [3 B1 N>  4  4  <] P3 [ 4  <  v  > A2] P4 [N>  v]
+# Solution by J.P. Grossman in 15
+= P1 [ 3 *> *> *2  <  1] P2 [A3 A< Bv  < Nv  <] P3 [ v  >  v]
 -Crazy Genetic Code
 ABBABA 0 BBB 0 AAA
 0 ABABBA 0 ABBABA 0
 
-# ??? <= 17 >= 10
+# ??? <= 17 >= 11
 # Solution by Quinn Mahoney
 # It is optimal given this structure of main pass in P1 (see Crazy Multi Sort 2 Simplified 3)
 = P1 [Av  4 Cv  4 Dv  4 Bv  2] P2 [ 3  3  1] P3 [ <  <  <] P4 [ > Nv  >]
@@ -350,7 +352,7 @@ P AABBB PPP
 0 ABABB PPP # Put poison to the right of the central stack
 0 AABBB PPP
 
-# ??? >= 12 [8,4]
+# ??? >= 12 [5,5,2]
 -Impossible Vertical Sort Simplified 7
 :ret       # require to return from main proc
 :size=8,3  # start searching from this size
