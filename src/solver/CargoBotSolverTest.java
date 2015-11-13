@@ -5,6 +5,8 @@ import junit.framework.TestCase;
 import java.util.Collections;
 
 import static solver.Constants.*;
+import static solver.Parser.*;
+import static solver.Util.*;
 
 public class CargoBotSolverTest extends TestCase {
     public void testWrong1() {
@@ -58,5 +60,24 @@ public class CargoBotSolverTest extends TestCase {
         t.code[1 * MAX_PROC_LEN + 1] = WHEN_NONE | LEFT;
         System.out.println(t.code2Str(false));
         assertTrue(t.simulateCodeInit());
+    }
+
+    public void testSubStack() {
+        int s0 = parseStack("0");
+        int s1 = parseStack("ABC");
+        int s2 = parseStack("ABCD");
+        int s3 = parseStack("BAC");
+
+        assertTrue(isSubStack(s0, s0));
+        assertTrue(isSubStack(s0, s1));
+        assertTrue(isSubStack(s0, s2));
+        assertTrue(isSubStack(s1, s1));
+        assertTrue(isSubStack(s1, s2));
+        assertTrue(isSubStack(s2, s2));
+
+        assertFalse(isSubStack(s2, s1));
+        assertFalse(isSubStack(s2, s0));
+        assertFalse(isSubStack(s1, s3));
+        assertFalse(isSubStack(s3, s1));
     }
 }

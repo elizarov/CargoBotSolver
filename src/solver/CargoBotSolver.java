@@ -71,6 +71,7 @@ public class CargoBotSolver extends Solution {
     private long[] cntFutile = new long[MAX_PROC_LEN * MAX_PROCS * 4];
     private long[] cntPoison = new long[MAX_PROC_LEN * MAX_PROCS * 4];
     private long[] cntStackOver = new long[MAX_PROC_LEN * MAX_PROCS * 4];
+    private long[] cntForbidden = new long[MAX_PROC_LEN * MAX_PROCS * 4];
     private long[] cntTooManyMoves = new long[MAX_PROC_LEN * MAX_PROCS * 4];
     private long totalMovesMade;
     private int maxMovesMade;
@@ -453,6 +454,9 @@ public class CargoBotSolver extends Solution {
                 case EXECUTE_FAIL_STACK_OVER:
                     cntStackOver[depth]++;
                     break sim_loop;
+                case EXECUTE_FAIL_FORBIDDEN:
+                    cntForbidden[depth]++;
+                    break sim_loop;
                 default:
                     throw new AssertionError();
             }
@@ -491,10 +495,14 @@ public class CargoBotSolver extends Solution {
             case DOWN:
                 int s = pos.b[pos.cp];
                 if (pos.ch != NONE) {
+                    // Put box
                     pos = world.copyPos();
                     pos.b[pos.cp] = stackPush(s, pos.ch);
                     pos.ch = NONE;
+                    if (constraints.stack != null && !checkStackConstraint(world, pos, true))
+                        return EXECUTE_FAIL_FORBIDDEN;
                 } else if (stackHeight(s) > 0) {
+                    // Take box
                     int ch = stackTop(s);
                     if (ch == POISON) {
                         return EXECUTE_FAIL_POISON;
@@ -502,6 +510,8 @@ public class CargoBotSolver extends Solution {
                     pos = world.copyPos();
                     pos.ch = ch;
                     pos.b[pos.cp] = stackPop(s);
+                    if (constraints.stack != null && !checkStackConstraint(world, pos, false))
+                        return EXECUTE_FAIL_FORBIDDEN;
                 }
                 return next(world, pi, ii);
             case RIGHT:
@@ -558,6 +568,20 @@ public class CargoBotSolver extends Solution {
             return EXECUTE_FAIL_INF_LOOP;
         }
         return EXECUTE_OK;
+    }
+
+    private boolean checkStackConstraint(World world, Pos pos, boolean put) {
+        int cp = pos.cp;
+        int csi = constraints.stack[cp];
+        if ((csi & STACK_INIT) != 0 && !isSubStack(pos.b[cp], world.init[cp]))
+            return false;
+        if ((csi & STACK_GOAL) != 0 && !isSubStack(pos.b[cp], world.goal[cp]))
+            return false;
+        if ((csi & STACK_PUT_ONLY) != 0 && !put)
+            return false;
+        if ((csi & STACK_TAKE_ONLY) != 0 && put)
+            return false;
+        return true;
     }
 
     private int next(World world, int pi, int ii) {
@@ -777,6 +801,7 @@ public class CargoBotSolver extends Solution {
         logStats("Futile        ", cntFutile);
         logStats("Poison        ", cntPoison);
         logStats("Stack Over    ", cntStackOver);
+        logStats("Forbidden     ", cntForbidden);
         logStats("Too Many Moves", cntTooManyMoves);
     }
 

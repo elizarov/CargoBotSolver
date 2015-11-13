@@ -15,6 +15,7 @@ import static solver.Util.*;
  */
 class World {
     final int index; // index of this world in worlds array
+    final int[] init; // init board
     final int[] goal; // goal board
 
     private final Pos initPos;
@@ -36,6 +37,7 @@ class World {
         int[] goalCC = convertAndCountColors(goal);
         if (!Arrays.equals(initCC, goalCC))
             throw new IllegalArgumentException("Inconsistent number of colors");
+        this.init = init;
         this.goal = goal;
         initPos = new Pos(init, cp, NONE, 0, 0);
         pos = initPos;

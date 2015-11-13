@@ -76,6 +76,7 @@ interface Constants {
     int EXECUTE_FAIL_RETURNS = 10;
     int EXECUTE_FAIL_POISON = 11;
     int EXECUTE_FAIL_STACK_OVER = 12;
+    int EXECUTE_FAIL_FORBIDDEN = 13;
 
     // ops list / strings
     int[] OPS = { DOWN, RIGHT, LEFT, CALL_1, CALL_2, CALL_3, CALL_4 };
@@ -84,6 +85,16 @@ interface Constants {
     // mods list / strings, (note: MODS has a sentinel value at the end)
     int[] MODS = { ALWAYS, WHEN_NONE, WHEN_ANY, WHEN_A, WHEN_B, WHEN_C, WHEN_D, MAX_MOD };
     String[] MOD_STRS = { " ", "N", "*", "A", "B", "C", "D" };
+
+    // constrains on stack contents
+    int STACK_ANY = 0; // any stack
+    int STACK_INIT = 1; // sub-stack of init
+    int STACK_GOAL = 2; // sub-stack of goal
+    int STACK_TAKE_ONLY = 4; // can only take boxes
+    int STACK_PUT_ONLY = 8; // can only put boxes
+
+    int[] STACKS = { STACK_ANY, STACK_INIT, STACK_GOAL, STACK_TAKE_ONLY, STACK_PUT_ONLY };
+    String[] STACK_STRS = { "*", "I", "G", "-", "+" };
 
     // other strings/chars
     char A_CHAR = 'A';
@@ -106,4 +117,5 @@ interface Constants {
     String CONSTRAINT_MIN_PROCS = "minprocs=";
     String CONSTRAINT_MAX_PROCS = "maxprocs=";
     String CONSTRAINT_MAX_MOVES = "maxmoves=";
+    String CONSTRAINT_STACK = "stack=";
 }

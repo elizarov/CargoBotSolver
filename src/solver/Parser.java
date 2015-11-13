@@ -80,6 +80,8 @@ class Parser {
                     constraints.maxProcs = parseInt(line.substring(CONSTRAINT_MAX_PROCS.length()));
                 } else if (startsWithIgnoreCase(CONSTRAINT_MAX_MOVES)) {
                     constraints.maxMoves = parseInt(line.substring(CONSTRAINT_MAX_MOVES.length()));
+                } else if (startsWithIgnoreCase(CONSTRAINT_STACK)) {
+                    constraints.stack = parseConstraintStack(line.substring(CONSTRAINT_STACK.length()));
                 } else
                     throw new IllegalArgumentException("Invalid constraints line: " + line);
                 nextLine(in);
@@ -144,7 +146,7 @@ class Parser {
         lineNo = in.getLineNumber();
     }
 
-    private static int parseConstraintMod(String line) {
+    private static int parseConstraintMod(String str) {
         int restrict = 0;
         for (int i = 0; i < MOD_STRS.length; i++) {
             int mod = MODS[i];
@@ -152,17 +154,39 @@ class Parser {
                 restrict |= mod;
         }
         loop:
-        for (int i = 0; i < line.length(); i++) {
-            String c = "" + line.charAt(i);
+        for (int i = 0; i < str.length(); i++) {
+            String c = "" + str.charAt(i);
             for (int j = 0; j < MOD_STRS.length; j++) {
                 if (c.equals(MOD_STRS[j])) {
                     restrict &= ~MODS[j];
                     continue loop;
                 }
             }
-            throw new IllegalArgumentException("Invalid restrictions: " + line);
+            throw new IllegalArgumentException("Invalid restrictions: " + str);
         }
         return restrict;
+    }
+
+    private int[] parseConstraintStack(String str) {
+        String[] ss = str.split("\\s+");
+        int n = ss.length;
+        int[] stack = new int[n];
+        for (int i = 0; i < n; i++) {
+            stack[i] = parseConstraintStackItem(ss[i]);
+        }
+        return stack;
+    }
+
+    private int parseConstraintStackItem(String str) {
+        int csi = 0;
+        for (int i = 0; i < STACK_STRS.length; i++) {
+            String s = STACK_STRS[i];
+            if (str.startsWith(STACK_STRS[i])) {
+                str = str.substring(s.length());
+                csi |= STACKS[i];
+            }
+        }
+        return csi;
     }
 
     private static int[] parseIntList(String str) {
@@ -175,30 +199,29 @@ class Parser {
         return ints;
     }
 
-    private static int[] parseBoard(String line) {
-        String[] s = line.split("\\s+");
-        int[] b = new int[s.length];
-        for (int i = 0; i < s.length; i++) {
-            try {
-                b[i] = parseInt(s[i]);
-            } catch (NumberFormatException e) {
-                b[i] = parseStack(s[i]);
-            }
+    private static int[] parseBoard(String str) {
+        String[] ss = str.split("\\s+");
+        int[] b = new int[ss.length];
+        for (int i = 0; i < ss.length; i++) {
+            b[i] = parseStack(ss[i]);
         }
         return b;
     }
 
-    private static int parseStack(String ss) {
+    static int parseStack(String str) {
+        try {
+            return parseInt(str);
+        } catch (NumberFormatException ignored) { /*continue*/ }
         int s = 0;
-        for (int i = 0; i < ss.length(); i++) {
-            char sc = ss.charAt(i);
+        for (int i = 0; i < str.length(); i++) {
+            char sc = str.charAt(i);
             int b;
             if (sc == POISON_CHAR) {
                 b = POISON;
             } else {
                 b = sc - A_CHAR + A;
                 if (b < A || b > MAX_COLORS)
-                    throw new IllegalArgumentException("Malformed stack: " + ss);
+                    throw new IllegalArgumentException("Malformed stack: " + str);
             }
             s = stackPush(s, b);
         }

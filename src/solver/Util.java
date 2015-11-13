@@ -41,6 +41,16 @@ class Util {
         return (h - 1) | ((s >> BITS_PER_COLOR) & ~STACK_HEIGHT_MASK);
     }
 
+    static boolean isSubStack(int s1, int s2) {
+        int h1 = stackHeight(s1);
+        int h2 = stackHeight(s2);
+        if (h1 > h2)
+            return false;
+        // assert h1 <= h2
+        int mask = ((1 << (h1 * BITS_PER_COLOR)) - 1) << BITS_PER_HEIGHT;
+        return (s1 & mask) == ((s2 >> ((h2 - h1) * BITS_PER_COLOR)) & mask);
+    }
+
     static long packFrame(int sp, int proc, int slot) {
         return (((long)proc << BITS_PER_SLOT) | slot) << sp;
     }
@@ -56,6 +66,5 @@ class Util {
     static int unpackSlot(int sp, long frame) {
         return (int)((frame >>> sp) & FRAME_SLOT_MASK);
     }
-
 
 }

@@ -287,6 +287,13 @@ BA 0 AB
 4 0 0 0 0 0 0
 0 0 0 0 0 0 4
 
+# Solution of size 5 = [5]
+= P1 [ v  >  v N<  1]
+-Test 2 Stack Constraints
+:stack=I- * * * * * G+
+4 0 0 0 0 0 0
+0 0 0 0 0 0 4
+
 # Solution of size 7 = [7]
 = P1 [ v *> *> A< N< C>  1]
 -Test 3
@@ -551,3 +558,14 @@ AAAA 0 CCCC 0 BBBB
 :minprocs=3
 0 ABCDB 0 CAADDB 0 CDBCA 0
 AAAA 0 CCCC 0 DDDD 0 BBBB
+
+# --------------------------------- Crazy Genetic Code Simplified ---------------------------------
+
+# ??? >= 12
+# Solution by J.P. Grossman in 15
+= P1 [ 3 *> *> *2  <  1] P2 [A3 A< Bv  < Nv  <] P3 [ v  >  v]
++Crazy Genetic Code Simplified 1
+:stack=I G I- G+ I- # make sure goal is gradually constructed
+:size=8,3 # start from this size
+ABBABA 0 BBB 0 AAA
+0 ABABBA 0 ABBABA 0
