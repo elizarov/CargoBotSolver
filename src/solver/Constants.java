@@ -118,4 +118,5 @@ interface Constants {
     String CONSTRAINT_MAX_PROCS = "maxprocs=";
     String CONSTRAINT_MAX_MOVES = "maxmoves=";
     String CONSTRAINT_STACK = "stack=";
+    String CONSTRAINT_OPS = "ops=";
 }

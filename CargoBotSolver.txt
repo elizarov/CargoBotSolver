@@ -180,11 +180,13 @@ AAA 0 BBB
 AAAAA 0 BB 0 CCC 0 DDDD 0
 A AAAA 0 BB C CC 0 DDDD
 
-# ??? <= 15 >= 11
-# Solution by Kay Chan in 16
-= P1 [ 3 B1  3] P2 [3 B1 N>  4  4  <] P3 [ 4  <  v  > A2] P4 [N>  v]
+# ??? <= 12 >= 11
+# Solution of size 12 = [8, 4]
+= P1 [ 2 N2 *1 N>  v *< *2 *2] P2 [ v N<  v  >]
 # Solution by J.P. Grossman in 15
 = P1 [ 3 *> *> *2  <  1] P2 [A3 A< Bv  < Nv  <] P3 [ v  >  v]
+# Solution by Kay Chan in 16
+= P1 [ 3 B1  3] P2 [3 B1 N>  4  4  <] P3 [ 4  <  v  > A2] P4 [N>  v]
 -Crazy Genetic Code
 ABBABA 0 BBB 0 AAA
 0 ABABBA 0 ABBABA 0
@@ -561,11 +563,19 @@ AAAA 0 CCCC 0 DDDD 0 BBBB
 
 # --------------------------------- Crazy Genetic Code Simplified ---------------------------------
 
-# ??? >= 12
-# Solution by J.P. Grossman in 15
-= P1 [ 3 *> *> *2  <  1] P2 [A3 A< Bv  < Nv  <] P3 [ v  >  v]
-+Crazy Genetic Code Simplified 1
+# Solution of size 12 = [8, 4]
+= P1 [ 2 N2 *1 N>  v *< *2 *2] P2 [ v N<  v  >]
+-Crazy Genetic Code Simplified 1
 :stack=I G I- G+ I- # make sure goal is gradually constructed
 :size=8,3 # start from this size
+ABBABA 0 BBB 0 AAA
+0 ABABBA 0 ABBABA 0
+
+# Solution of size 12 = [8, 4]
+= P1 [ 2 N2 *1 N>  v *< *2 *2] P2 [ v N<  v  >]
+-Crazy Genetic Code Simplified 2
+:stack=I G I- G+ I- # make sure goal is gradually constructed
+:size=8,4 # start from this size
+:ops=>2 <2 v2
 ABBABA 0 BBB 0 AAA
 0 ABABBA 0 ABBABA 0

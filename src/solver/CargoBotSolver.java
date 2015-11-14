@@ -376,6 +376,7 @@ public class CargoBotSolver extends Solution {
     private void initPruning() {
         Arrays.fill(usedOps, 0);
         Arrays.fill(shallUseOp, 0);
+        // defaults
         if (Stream.of(worlds).anyMatch(World::needsBothMoves)) {
             shallUseOp[LEFT] = 1;
             shallUseOp[RIGHT] = 1;
@@ -385,6 +386,12 @@ public class CargoBotSolver extends Solution {
             if (procLen[i] != 0)
                 shallUseOp[CALL_1 + i] = 1;
         }
+        // incorporate constraints (if any)
+        if (constraints.ops != null) {
+            for (int i = 0; i < MAX_OP; i++)
+                shallUseOp[i] = Math.max(shallUseOp[i], constraints.ops[i]);
+        }
+        // count used ops and free slos
         freeOpSlots = 0;
         for (int pi = 0; pi < MAX_PROCS; pi++) {
             for (int ii = 0; ii < procLen[pi]; ii++) {
@@ -395,6 +402,7 @@ public class CargoBotSolver extends Solution {
                     usedOps[op]++;
             }
         }
+        // figure out how much more shall be used
         shallUseOpSlots = 0;
         for (int i = 0; i < MAX_PROC_LEN; i++) {
             if (shallUseOp[i] > usedOps[i])

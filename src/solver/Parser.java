@@ -82,6 +82,8 @@ class Parser {
                     constraints.maxMoves = parseInt(line.substring(CONSTRAINT_MAX_MOVES.length()));
                 } else if (startsWithIgnoreCase(CONSTRAINT_STACK)) {
                     constraints.stack = parseConstraintStack(line.substring(CONSTRAINT_STACK.length()));
+                } else if (startsWithIgnoreCase(CONSTRAINT_OPS)) {
+                    constraints.ops = parseConstraintOps(line.substring(CONSTRAINT_OPS.length()));
                 } else
                     throw new IllegalArgumentException("Invalid constraints line: " + line);
                 nextLine(in);
@@ -187,6 +189,16 @@ class Parser {
             }
         }
         return csi;
+    }
+
+    private int[] parseConstraintOps(String str) {
+        String[] ss = str.split("\\s+");
+        int[] ops = new int[MAX_OP];
+        for (String s : ss) {
+            int op = str2op(s.substring(0, 1));
+            ops[op] = Integer.parseInt(s.substring(1));
+        }
+        return ops;
     }
 
     private static int[] parseIntList(String str) {

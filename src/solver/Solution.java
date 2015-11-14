@@ -5,6 +5,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static solver.Constants.*;
+import static solver.Util.*;
 
 /**
  * Represents a single solution with code for solution's procedures.
@@ -99,53 +100,5 @@ class Solution {
     @Override
     public String toString() {
         return code2Str(false);
-    }
-
-    private static String mod2str(int c, boolean pickOne) {
-        int mod = c & ~OP_MASK;
-        if (mod == 0)
-            return "_";
-        for (int i = 0; i < MOD_STRS.length; i++) {
-            if (mod == MODS[i] || pickOne && (mod & MODS[i]) != 0) {
-                return MOD_STRS[i];
-            }
-        }
-        return "?";
-    }
-
-    private static String op2str(int c) {
-        int op = c & OP_MASK;
-        if (op == UNKNOWN)
-            return "_";
-        for (int i = 0; i < OP_STRS.length; i++) {
-            if (op == OPS[i]) {
-                return OP_STRS[i];
-            }
-        }
-        return "?";
-    }
-
-    private static int str2mod(String s) {
-        if (s.equals("_")) {
-            return 0;
-        }
-        for (int i = 0; i < MOD_STRS.length; i++) {
-            if (s.equals(MOD_STRS[i])) {
-                return MODS[i];
-            }
-        }
-        return -1;
-    }
-
-    private static int str2op(String s) {
-        if (s.equals("_")) {
-            return UNKNOWN;
-        }
-        for (int i = 0; i < OP_STRS.length; i++) {
-            if (s.equals(OP_STRS[i])) {
-                return OPS[i];
-            }
-        }
-        return -1;
     }
 }

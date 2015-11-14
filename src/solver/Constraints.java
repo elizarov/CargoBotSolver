@@ -18,4 +18,5 @@ class Constraints {
     int maxProcs = MAX_PROCS; // max number of procs
     int maxMoves = 10000; // default practical number of moves to make
     int[] stack;      // limit on stacks, none by default
+    int[] ops;        // override min # of ops to have
 }
