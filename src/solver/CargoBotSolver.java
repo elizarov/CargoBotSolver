@@ -60,22 +60,15 @@ public class CargoBotSolver extends Solution {
     private final World[] worlds; // many worlds in simulation
 
     // stats
-    private long[] cntTotal = new long[MAX_PROC_LEN * MAX_PROCS * 4];
-    private long[] cntBumpLeft = new long[MAX_PROC_LEN * MAX_PROCS * 4];
-    private long[] cntBumpRight = new long[MAX_PROC_LEN * MAX_PROCS * 4];
-    private long[] cntTooHigh = new long[MAX_PROC_LEN * MAX_PROCS * 4];
-    private long[] cntInfLoop = new long[MAX_PROC_LEN * MAX_PROCS * 4];
-    private long[] cntReturns = new long[MAX_PROC_LEN * MAX_PROCS * 4];
-    private long[] cntUnreachable = new long[MAX_PROC_LEN * MAX_PROCS * 4];
-    private long[] cntRedundant = new long[MAX_PROC_LEN * MAX_PROCS * 4];
-    private long[] cntFutile = new long[MAX_PROC_LEN * MAX_PROCS * 4];
-    private long[] cntPoison = new long[MAX_PROC_LEN * MAX_PROCS * 4];
-    private long[] cntStackOver = new long[MAX_PROC_LEN * MAX_PROCS * 4];
-    private long[] cntForbidden = new long[MAX_PROC_LEN * MAX_PROCS * 4];
-    private long[] cntTooManyMoves = new long[MAX_PROC_LEN * MAX_PROCS * 4];
-    private long totalMovesMade;
-    private int maxMovesMade;
-    private final Solution maxMovesSolution = new Solution();
+    private long[] cntTotal = new long[MAX_DEPTH];
+    private long[][] cntFails = new long[MAX_FAIL][];
+    private long[] cntUnreachable = new long[MAX_DEPTH];
+    private long[] cntRedundant = new long[MAX_DEPTH];
+    private long[] cntFutile = new long[MAX_DEPTH];
+    private long[] cntTooManySteps = new long[MAX_DEPTH];
+    private long totalStepsMade;
+    private int maxStepsMade;
+    private final Solution maxStepsSolution = new Solution();
 
     // pruning for unused operations
     private final int[] usedOps = new int[MAX_OP];
@@ -114,6 +107,10 @@ public class CargoBotSolver extends Solution {
         initRedundantDowns();
         // init search worlds
         this.worlds = worlds.toArray(new World[worlds.size()]);
+        // allocate fails counts
+        for (int fail : FAILS) {
+            cntFails[fail] = new long[MAX_DEPTH];
+        }
     }
 
     // ======================================= instance methods =======================================
@@ -412,14 +409,15 @@ public class CargoBotSolver extends Solution {
 
     private boolean simulateCode0(int depth, World world) {
         cntTotal[depth]++; // track attempts at each depth
-        world.save(depth);
+        Pos save = world.save();
     sim_loop:
         while (true) {
             Pos pos = world.pos;
             int pi = unpackProc(pos.sp, pos.cs); // proc index
             int ii = unpackSlot(pos.sp, pos.cs); // instr index
             int c = code[pi * MAX_PROC_LEN + ii];
-            switch (executeOneStep(world, pos, pi, ii, c)) {
+            int result = executeOneStep(world, pos, pi, ii, c);
+            switch (result) {
                 case EXECUTE_GOAL:
                     // goal in this world -- check next world (if any)
                     if (world.index >= worlds.length - 1)
@@ -441,44 +439,21 @@ public class CargoBotSolver extends Solution {
                     if (searchOp(depth, world, 0, pi, ii, c))
                         return true;
                     break sim_loop;
-                case EXECUTE_FAIL_BUMP_LEFT:
-                    cntBumpLeft[depth]++;
-                    break sim_loop;
-                case EXECUTE_FAIL_BUMP_RIGHT:
-                    cntBumpRight[depth]++;
-                    break sim_loop;
-                case EXECUTE_FAIL_TOO_HIGH:
-                    cntTooHigh[depth]++;
-                    break sim_loop;
-                case EXECUTE_FAIL_INF_LOOP:
-                    cntInfLoop[depth]++;
-                    break sim_loop;
-                case EXECUTE_FAIL_RETURNS:
-                    cntReturns[depth]++;
-                    break sim_loop;
-                case EXECUTE_FAIL_POISON:
-                    cntPoison[depth]++;
-                    break sim_loop;
-                case EXECUTE_FAIL_STACK_OVER:
-                    cntStackOver[depth]++;
-                    break sim_loop;
-                case EXECUTE_FAIL_FORBIDDEN:
-                    cntForbidden[depth]++;
-                    break sim_loop;
                 default:
-                    throw new AssertionError();
+                    cntFails[result][depth]++;
+                    break sim_loop;
             }
-            totalMovesMade++;
-            if (world.movesMade() > constraints.maxMoves) {
-                cntTooManyMoves[depth]++;
+            totalStepsMade++;
+            if (world.stepsMade() > constraints.maxSteps) {
+                cntTooManySteps[depth]++;
                 break;
             }
         }
-        if (world.movesMade() > maxMovesMade) {
-            maxMovesMade = world.movesMade();
-            maxMovesSolution.assign(this);
+        if (world.stepsMade() > maxStepsMade) {
+            maxStepsMade = world.stepsMade();
+            maxStepsSolution.assign(this);
         }
-        world.rollback(depth);
+        world.rollback(save);
         return false;
     }
 
@@ -520,7 +495,12 @@ public class CargoBotSolver extends Solution {
                     pos.b[pos.cp] = stackPop(s);
                     if (constraints.stack != null && !checkStackConstraint(world, pos, false))
                         return EXECUTE_FAIL_FORBIDDEN;
+                } else {
+                    // take attempt took nothing -- need a copy of pos to record action anyway
+                    world.copyPos();
                 }
+                if (!world.action(DOWN))
+                    return EXECUTE_FAIL_ACTION;
                 return next(world, pi, ii);
             case RIGHT:
                 if (pos.cp >= pos.b.length - 1) {
@@ -531,6 +511,8 @@ public class CargoBotSolver extends Solution {
                 }
                 pos = world.copyPos();
                 pos.cp++;
+                if (!world.action(RIGHT))
+                    return EXECUTE_FAIL_ACTION;
                 return next(world, pi, ii);
             case LEFT:
                 if (pos.cp <= 0) {
@@ -541,6 +523,8 @@ public class CargoBotSolver extends Solution {
                 }
                 pos = world.copyPos();
                 pos.cp--;
+                if (!world.action(LEFT))
+                    return EXECUTE_FAIL_ACTION;
                 return next(world, pi, ii);
             case UNKNOWN:
                 return EXECUTE_UNKNOWN_CODE;
@@ -569,7 +553,7 @@ public class CargoBotSolver extends Solution {
         }
         // record new proc & instruction in the current activation record
         pos.cs = clearFrame(pos.sp, pos.cs) | packFrame(pos.sp, ci, 0);
-        pos.movesMade++;
+        pos.stepsMade++;
         // check for infinite loop on call (and on call only!)
         if (!world.checkVisitedAndCommit()) {
             world.undoCopy();
@@ -581,10 +565,19 @@ public class CargoBotSolver extends Solution {
     private boolean checkStackConstraint(World world, Pos pos, boolean put) {
         int cp = pos.cp;
         int csi = constraints.stack[cp];
-        if ((csi & STACK_INIT) != 0 && !isSubStack(pos.b[cp], world.init[cp]))
-            return false;
-        if ((csi & STACK_GOAL) != 0 && !isSubStack(pos.b[cp], world.goal[cp]))
-            return false;
+        if ((csi & STACK_INIT) != 0) {
+            if ((csi & STACK_GOAL) == 0) {
+                if (!isSubStack(pos.b[cp], world.init[cp]))
+                    return false;
+            } else {
+                // when ":stack=IG", then it can be either init or goal stack
+                if (!isSubStack(pos.b[cp], world.init[cp]) && !isSubStack(pos.b[cp], world.goal[cp]))
+                    return false;
+            }
+        } else {
+            if ((csi & STACK_GOAL) != 0 && !isSubStack(pos.b[cp], world.goal[cp]))
+                return false;
+        }
         if ((csi & STACK_PUT_ONLY) != 0 && !put)
             return false;
         if ((csi & STACK_TAKE_ONLY) != 0 && put)
@@ -603,7 +596,7 @@ public class CargoBotSolver extends Solution {
             // update frame
             pos.cs = clearFrame(pos.sp, pos.cs) | packFrame(pos.sp, pi, ii);
         }
-        pos.movesMade++;
+        pos.stepsMade++;
         if (Arrays.equals(world.goal, pos.b)
                 && (!constraints.ret || pos.sp < 0)
                 && (constraints.goalcp < 0 || pos.cp == constraints.goalcp))
@@ -753,9 +746,12 @@ public class CargoBotSolver extends Solution {
     }
 
     private void logMovesMade() {
-        log("This solution makes %s moves%n", Stream.of(worlds)
-                .map(world -> String.format(Locale.US, "%,d", world.movesMade()))
+        log("This solution makes %s steps%n", Stream.of(worlds)
+                .map(world -> String.format(Locale.US, "%,d", world.stepsMade()))
                 .collect(Collectors.joining(", ")));
+        for (World world : worlds) {
+            log("This solutions performs %d actions: %s%n", world.actionsMade(), world.actionsToString());
+        }
     }
 
     void solve() throws IOException {
@@ -795,22 +791,17 @@ public class CargoBotSolver extends Solution {
     }
 
     private void logAllStats() {
-        log("Made total of %,d moves while searching%n", totalMovesMade);
-        log("Made max of %,d moves with %s%n", maxMovesMade, maxMovesSolution);
+        log("Made total of %,d steps while searching%n", totalStepsMade);
+        log("Made max of %,d steps with %s%n", maxStepsMade, maxStepsSolution);
         log("Analyzed combinations and encountered backtracking reasons:%n");
         logStats("Total         ", cntTotal);
-        logStats("Bump Left     ", cntBumpLeft);
-        logStats("Bump Right    ", cntBumpRight);
-        logStats("Too High      ", cntTooHigh);
-        logStats("Inf Loop      ", cntInfLoop);
-        logStats("Returns       ", cntReturns);
+        for (int i = 0; i < FAILS.length; i++) {
+            logStats(FAIL_STRS[i], cntFails[FAILS[i]]);
+        }
         logStats("Unreachable   ", cntUnreachable);
         logStats("Redundant     ", cntRedundant);
         logStats("Futile        ", cntFutile);
-        logStats("Poison        ", cntPoison);
-        logStats("Stack Over    ", cntStackOver);
-        logStats("Forbidden     ", cntForbidden);
-        logStats("Too Many Moves", cntTooManyMoves);
+        logStats("Too Many Steps", cntTooManySteps);
     }
 
     private void logStats(String stat, long[] cnt) {

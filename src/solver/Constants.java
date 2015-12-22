@@ -10,6 +10,8 @@ interface Constants {
     int MAX_PROCS = 4;
     int MAX_PROC_LEN = 8;
 
+    int MAX_DEPTH = MAX_PROC_LEN * MAX_PROCS * 4;
+
     // Bit sizes
     int BITS_PER_HEIGHT = 3;
     int STACK_HEIGHT_MASK = (1 << BITS_PER_HEIGHT) - 1;
@@ -77,6 +79,20 @@ interface Constants {
     int EXECUTE_FAIL_POISON = 11;
     int EXECUTE_FAIL_STACK_OVER = 12;
     int EXECUTE_FAIL_FORBIDDEN = 13;
+    int EXECUTE_FAIL_ACTION = 14;
+    int MAX_FAIL = 15;
+
+    int[] FAILS = {
+            EXECUTE_FAIL_BUMP_RIGHT, EXECUTE_FAIL_BUMP_LEFT, EXECUTE_FAIL_TOO_HIGH,
+            EXECUTE_FAIL_INF_LOOP, EXECUTE_FAIL_RETURNS, EXECUTE_FAIL_POISON,
+            EXECUTE_FAIL_STACK_OVER, EXECUTE_FAIL_FORBIDDEN, EXECUTE_FAIL_ACTION
+    };
+
+    String[] FAIL_STRS = {
+            "Bump Left     ", "Bump Right    ", "Too High      ",
+            "Inf Loop      ", "Returns       ", "Poison        ",
+            "Stack Over    ", "Forbidden     ", "Wrong Action  "
+    };
 
     // ops list / strings
     int[] OPS = { DOWN, RIGHT, LEFT, CALL_1, CALL_2, CALL_3, CALL_4 };
@@ -116,7 +132,8 @@ interface Constants {
     String CONSTRAINT_USE_FIXED = "usefixed";
     String CONSTRAINT_MIN_PROCS = "minprocs=";
     String CONSTRAINT_MAX_PROCS = "maxprocs=";
-    String CONSTRAINT_MAX_MOVES = "maxmoves=";
+    String CONSTRAINT_MAX_STEPS = "maxsteps=";
     String CONSTRAINT_STACK = "stack=";
     String CONSTRAINT_OPS = "ops=";
+    String CONSTRAINT_ACTIONS = "actions=";
 }

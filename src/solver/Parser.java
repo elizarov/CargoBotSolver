@@ -78,12 +78,14 @@ class Parser {
                     constraints.minProcs = parseInt(line.substring(CONSTRAINT_MIN_PROCS.length()));
                 } else if (startsWithIgnoreCase(CONSTRAINT_MAX_PROCS)) {
                     constraints.maxProcs = parseInt(line.substring(CONSTRAINT_MAX_PROCS.length()));
-                } else if (startsWithIgnoreCase(CONSTRAINT_MAX_MOVES)) {
-                    constraints.maxMoves = parseInt(line.substring(CONSTRAINT_MAX_MOVES.length()));
+                } else if (startsWithIgnoreCase(CONSTRAINT_MAX_STEPS)) {
+                    constraints.maxSteps = parseInt(line.substring(CONSTRAINT_MAX_STEPS.length()));
                 } else if (startsWithIgnoreCase(CONSTRAINT_STACK)) {
                     constraints.stack = parseConstraintStack(line.substring(CONSTRAINT_STACK.length()));
                 } else if (startsWithIgnoreCase(CONSTRAINT_OPS)) {
                     constraints.ops = parseConstraintOps(line.substring(CONSTRAINT_OPS.length()));
+                } else if (startsWithIgnoreCase(CONSTRAINT_ACTIONS)) {
+                    constraints.actions = parseConstraintActions(line.substring(CONSTRAINT_ACTIONS.length()));
                 } else
                     throw new IllegalArgumentException("Invalid constraints line: " + line);
                 nextLine(in);
@@ -96,7 +98,7 @@ class Parser {
                 nextLine(in);
                 String line2 = line;
                 nextLine(in);
-                worlds.add(new World(i, constraints.initcp, parseBoard(line1), parseBoard(line2)));
+                worlds.add(new World(i, constraints.initcp, parseBoard(line1), parseBoard(line2), constraints));
             }
             if (on || all) {
                 CargoBotSolver.SOLVER = new CargoBotSolver(name, constraints, worlds);
@@ -199,6 +201,16 @@ class Parser {
             ops[op] = Integer.parseInt(s.substring(1));
         }
         return ops;
+    }
+
+    private int[] parseConstraintActions(String s) {
+        s = s.trim();
+        int n = s.length();
+        int[] actions = new int[n];
+        for (int i = 0; i < n; i++) {
+            actions[i] = str2op(Character.toString(s.charAt(i)));
+        }
+        return actions;
     }
 
     private static int[] parseIntList(String str) {

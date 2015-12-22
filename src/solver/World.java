@@ -15,6 +15,8 @@ import static solver.Util.*;
  */
 class World {
     final int index; // index of this world in worlds array
+    final Constraints constraints;
+
     final int[] init; // init board
     final int[] goal; // goal board
 
@@ -24,12 +26,14 @@ class World {
 
     Pos pos; // current position
 
-    // saved position for each depth
-    private final Pos[] savePos = new Pos[MAX_PROC_LEN * MAX_PROCS * 4];
     private Pos copy; // current copy
 
-    World(int index, int cp, int[] init, int[] goal) {
+    // keeps performed claw actions in this world
+    private int[] actions;
+
+    World(int index, int cp, int[] init, int[] goal, Constraints constraints) {
         this.index = index;
+        this.constraints = constraints;
         if (init.length != goal.length)
             throw new IllegalArgumentException("Inconsistent lengths");
         // init colors
@@ -42,6 +46,7 @@ class World {
         initPos = new Pos(init, cp, NONE, 0, 0);
         pos = initPos;
         visited.add(initPos);
+        actions = new int[constraints.maxSteps];
     }
 
     private int[] convertAndCountColors(int[] ss) {
@@ -79,11 +84,10 @@ class World {
         return maxColor;
     }
 
-    void save(int depth) {
+    Pos save() {
         assert copy == null;
         assert pos.status == Pos.IN_HASH || pos.status == Pos.SAVED;
-        assert savePos[depth] == null;
-        savePos[depth] = pos;
+        return pos;
     }
 
     Pos copyPos() {
@@ -99,10 +103,9 @@ class World {
         }
     }
 
-    void rollback(int depth) {
+    void rollback(Pos save) {
         undoCopy();
-        pos = savePos[depth];
-        savePos[depth] = null;
+        pos = save;
         visited.freeUntil(pos);
     }
 
@@ -127,14 +130,33 @@ class World {
         return false;
     }
 
-    int movesMade() {
-        return pos.movesMade;
+    int stepsMade() {
+        return pos.stepsMade;
+    }
+
+    int actionsMade() {
+        return pos.actionsMade;
+    }
+
+    boolean action(int op) {
+        int[] ca = constraints.actions;
+        if (ca != null && (copy.actionsMade >= ca.length || ca[copy.actionsMade] != op))
+            return false;
+        actions[copy.actionsMade++] = op;
+        return true;
+    }
+
+    String actionsToString() {
+        StringBuilder sb = new StringBuilder(pos.actionsMade);
+        for (int i = 0; i < pos.actionsMade; i++) {
+            sb.append(op2str(actions[i]));
+        }
+        return sb.toString();
     }
 
     void restore() {
         undoCopy();
         visited.freeUntil(initPos);
-        Arrays.fill(savePos, null);
         assert initPos.status == Pos.IN_HASH;
         pos = initPos;
     }
@@ -143,4 +165,5 @@ class World {
         // this is a kludge, so that Tutorial Cargo 101 solves
         return IntStream.of(initPos.b).map(Util::stackHeight).sum() > 1;
     }
+
 }

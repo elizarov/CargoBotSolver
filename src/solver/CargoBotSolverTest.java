@@ -9,11 +9,14 @@ import static solver.Parser.*;
 import static solver.Util.*;
 
 public class CargoBotSolverTest extends TestCase {
+
+    private final Constraints constraints = new Constraints();
+
     public void testWrong1() {
         int[] init = { 4, 4, 4, 0, 0, 0, 0 };
         int[] goal = { 0, 0, 0, 0, 4, 4, 4 };
-        CargoBotSolver t = new CargoBotSolver("", new Constraints(),
-                Collections.singletonList(new World(0, 0, init, goal)));
+        CargoBotSolver t = new CargoBotSolver("", constraints,
+                Collections.singletonList(new World(0, 0, init, goal, constraints)));
         t.procLen[0] = 4;
         t.procLen[1] = 4;
         t.code[0 * MAX_PROC_LEN + 0] = ALWAYS | DOWN;
@@ -31,8 +34,8 @@ public class CargoBotSolverTest extends TestCase {
     public void testRight1() {
         int[] init = { 4, 0, 0, 0, 0, 0, 0 };
         int[] goal = { 0, 0, 0, 0, 0, 0, 4 };
-        CargoBotSolver t = new CargoBotSolver("", new Constraints(),
-                Collections.singletonList(new World(0, 0, init, goal)));
+        CargoBotSolver t = new CargoBotSolver("", constraints,
+                Collections.singletonList(new World(0, 0, init, goal, constraints)));
         t.procLen[0] = 5;
         t.code[0 * MAX_PROC_LEN + 0] = ALWAYS | DOWN;
         t.code[0 * MAX_PROC_LEN + 1] = ALWAYS | RIGHT;
@@ -46,8 +49,8 @@ public class CargoBotSolverTest extends TestCase {
     public void testRight2() {
         int[] init = { 4, 4, 4, 0, 0, 0, 0 };
         int[] goal = { 0, 0, 0, 0, 4, 4, 4 };
-        CargoBotSolver t = new CargoBotSolver("", new Constraints(),
-                Collections.singletonList(new World(0, 0, init, goal)));
+        CargoBotSolver t = new CargoBotSolver("", constraints,
+                Collections.singletonList(new World(0, 0, init, goal, constraints)));
         t.procLen[0] = 6;
         t.procLen[1] = 2;
         t.code[0 * MAX_PROC_LEN + 0] = ALWAYS | DOWN;

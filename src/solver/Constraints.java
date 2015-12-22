@@ -16,7 +16,8 @@ class Constraints {
     boolean useFixed; // when procs in "use" must have fixed numbers
     int minProcs = 1; // min number of procs
     int maxProcs = MAX_PROCS; // max number of procs
-    int maxMoves = 10000; // default practical number of moves to make
+    int maxSteps = 10000; // default practical number of code steps to make
     int[] stack;      // limit on stacks, none by default
     int[] ops;        // override min # of ops to have
+    int[] actions;    // fixed list of claw actions to make
 }

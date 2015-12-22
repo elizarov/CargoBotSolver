@@ -316,6 +316,13 @@ ABC 0 0 0
 0 0 0 0 0 0 6
 6 0 0 0 0 0 0
 
+# Solution of size 7 = [5, 2]
+=P1 [ v  2  2  2  v] P2 [ >  >]
+-Tutorial Transporter Long Actions
+:actions=v>>>>>>v
+1 0 0 0 0 0 0
+0 0 0 0 0 0 1
+
 # --------------------------------- Impossible Vertical Sort Simplified ---------------------------------
 
 # Solution of size 9 = [7, 2]
@@ -383,12 +390,29 @@ PPPB AB PPPPP
 PB BAAAB 0
 PB AAABB 0
 
-# ??? >= 16 [8, 3, 3, 2]
+# ??? >= 12 [5,5,2]
 -Impossible Vertical Sort Simplified 8
-:initcp=1  # Claw starts at second stack
-:use=P1 [> v <] P2 [< v >] # use this subprocs in code
-0 ABABB BAB ABBA BA BAAAB 0
-0 AABBB ABB AABB AB AAABB 0
+:ret          # require to return from main proc
+:size=8,4     # start searching from this size
+:initcp=1     # Claw starts at second stack
+:worlds=5     # simultaneously solve 5 worlds
+:stack=* IG * # drive central stack to solution (require sub-stack of init or sub-stack of goal)
+:ops=>2 <2 v2 # min number of ops
+# Stack 1
+0 ABABB PPP # Put poison to the right of the central stack
+0 AABBB PPP
+# Stack 2
+PPPPB BAB PPPP
+PPPPB ABB PPPP
+# Stack 3
+PPB ABBA PP
+PPB AABB PP
+# Stack 4
+PPPB BA PPPPP
+PPPB AB PPPPP
+# Stack 5
+PB BAAAB 0
+PB AAABB 0
 
 # --------------------------------- Impossible Restoring Order Simplified ---------------------------------
 
@@ -538,6 +562,16 @@ PPPP 0 PPPPPP
 # Stack 6
 0 BABABA 0
 0 ABABAB 0
+
+# == 14 -- cannot be improved
+# Solution by Jan Achrenius
+= P1 [ 4 *2  1] P2 [ 3 *2  3] P3 [ v  <  v  <  4  4] P4 [ v  >]
+-Impossible Palette Swap Simplified 3
+:initcp=1  # Claw starts at second stack
+# Require a list of actions as in Jan Achrenius solution
+:actions=v>v<v<v>v>v<v<v>v>v>v<v<v>v>v<v<v>v>v<v<v>v>v<v<v>v>v>v<v<v>v>v<v<v>v>v>v<v<v>v>v<v<v>v>v<v<v>v>v<v<v>v>v>v>v<v<v>v>v<v<v>v>v<v<v>v>v<v<v>v>v<v<v>v>v<v<v>v
+0 AB BABA BA BABA 0 BABABA 0
+0 BA ABAB AB ABAB 0 ABABAB 0
 
 # --------------------------------- Crazy Multi Sort 2 Simplified ---------------------------------
 

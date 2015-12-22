@@ -19,7 +19,8 @@ class Pos {
     int sp;       // stack pointer
     long cs;      // call stack
 
-    int movesMade;       // no of moves made so far
+    int stepsMade;       // no of steps (in code) made so far
+    int actionsMade;     // no of claw actions made so far
 
     byte status;  // NEW, FREE, IN_HASH, or SAVED
     int hIndex;   // index in hash
@@ -44,7 +45,8 @@ class Pos {
         this.ch = pos.ch;
         this.sp = pos.sp;
         this.cs = pos.cs;
-        this.movesMade = pos.movesMade;
+        this.stepsMade = pos.stepsMade;
+        this.actionsMade = pos.actionsMade;
     }
 
     @Override
